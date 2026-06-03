@@ -6,3 +6,6 @@
 
 # OS
 .DS_Store
+
+# Notes internes de dev (non destinées au repo public)
+NOTES.md

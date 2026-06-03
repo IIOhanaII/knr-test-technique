@@ -1,0 +1,12 @@
+{
+  "name": "knr-test-technique",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KNR test technique",
+  "scripts": {
+    "dev": "shopify theme dev --store=knr-test.myshopify.com",
+    "pull": "shopify theme pull --store=knr-test.myshopify.com",
+    "push": "shopify theme push --store=knr-test.myshopify.com",
+    "check": "shopify theme check"
+  }
+}
