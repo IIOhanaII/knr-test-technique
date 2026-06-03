@@ -1,0 +1,24 @@
+{
+  "sections": {
+    "knr-announcement": {
+      "type": "knr-announcement-bar",
+      "blocks": {
+        "msg-1": {
+          "type": "announcement",
+          "settings": {
+            "text": "Livraison estimée sous 48h"
+          }
+        },
+        "msg-2": {
+          "type": "announcement",
+          "settings": {
+            "text": "Consectetur.",
+            "underline": true
+          }
+        }
+      },
+      "block_order": ["msg-1", "msg-2"]
+    }
+  },
+  "order": ["knr-announcement"]
+}

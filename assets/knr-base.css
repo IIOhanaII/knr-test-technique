@@ -1,0 +1,49 @@
+/* KNR — design tokens.
+ * Loaded globally via snippets/stylesheets.liquid.
+ * Font aliases reuse Horizon's CSS vars so fonts are loaded once by the theme.
+ */
+
+:root {
+  /* Palette */
+  --knr-color-bg: #dfdbd6;
+  --knr-color-surface-1: #f9f8f5;
+  --knr-color-surface-2: #f5f4f1;
+  --knr-color-surface-3: #dcd5c3;
+  --knr-color-surface-4: #e2d3bb;
+  --knr-color-accent: #b5a282;
+  --knr-color-black: #000000;
+  --knr-color-white: #ffffff;
+  --knr-color-text: var(--knr-color-black);
+  --knr-color-text-inverse: var(--knr-color-white);
+  --knr-color-border: rgb(0 0 0 / 0.12);
+
+  /* Typography — driven by theme settings (Settings > Typography) */
+  --knr-font-sans: var(--font-body--family);
+  --knr-font-display: var(--font-heading--family);
+
+  /* Type scale */
+  --knr-text-xs: 0.6875rem;   /* 11px */
+  --knr-text-sm: 0.75rem;     /* 12px */
+  --knr-text-base: 0.875rem;  /* 14px */
+  --knr-text-md: 1rem;        /* 16px */
+  --knr-text-lg: 1.125rem;    /* 18px */
+  --knr-text-xl: 1.5rem;      /* 24px */
+  --knr-text-2xl: 2rem;       /* 32px */
+
+  /* Spacing (4px base) */
+  --knr-space-1: 0.25rem;
+  --knr-space-2: 0.5rem;
+  --knr-space-3: 0.75rem;
+  --knr-space-4: 1rem;
+  --knr-space-5: 1.25rem;
+  --knr-space-6: 1.5rem;
+  --knr-space-8: 2rem;
+  --knr-space-10: 2.5rem;
+  --knr-space-12: 3rem;
+  --knr-space-16: 4rem;
+
+  /* Container */
+  --knr-container-max: 1440px;
+  --knr-container-padding-mobile: var(--knr-space-6);
+  --knr-container-padding-desktop: var(--knr-space-10);
+}

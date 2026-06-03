@@ -1,0 +1,110 @@
+{%- comment -%}
+  KNR — Announcement bar.
+  Each message is a block driven from the theme editor.
+{%- endcomment -%}
+
+<aside class="knr-announcement-bar">
+  <div class="knr-announcement-bar__inner">
+    {%- for block in section.blocks -%}
+      <span
+        class="knr-announcement-bar__item{% if block.settings.underline %} knr-announcement-bar__item--underline{% endif %}"
+        {{ block.shopify_attributes }}
+      >
+        {{- block.settings.text -}}
+      </span>
+    {%- endfor -%}
+  </div>
+</aside>
+
+{% stylesheet %}
+  .knr-announcement-bar {
+    --knr-bar-height: 32px;
+    --knr-bar-underline-width: 0.8px;
+
+    background: var(--knr-color-black);
+    color: var(--knr-color-white);
+    font-family: var(--knr-font-sans);
+    font-size: var(--knr-text-sm);
+    line-height: 1;
+    width: 100%;
+  }
+
+  .knr-announcement-bar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--knr-space-1);
+    min-height: var(--knr-bar-height);
+    padding-block: var(--knr-space-2);
+    padding-inline: var(--knr-space-4);
+  }
+
+  .knr-announcement-bar__item {
+    display: inline-block;
+    text-align: center;
+  }
+
+  .knr-announcement-bar__item--underline {
+    border-block-end: var(--knr-bar-underline-width) solid currentColor;
+    padding-block-end: var(--knr-space-1);
+  }
+
+  .knr-announcement-bar__item + .knr-announcement-bar__item {
+    margin-inline-start: var(--knr-space-1);
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-announcement-bar {
+      --knr-bar-height: 36px;
+    }
+
+    .knr-announcement-bar__inner {
+      gap: var(--knr-space-3);
+    }
+
+    .knr-announcement-bar__item + .knr-announcement-bar__item {
+      margin-inline-start: var(--knr-space-3);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.announcement_bar",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "blocks": [
+    {
+      "type": "announcement",
+      "name": "t:names.announcement",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "t:settings.text",
+          "default": "Livraison estimée sous 48h"
+        },
+        {
+          "type": "checkbox",
+          "id": "underline",
+          "label": "t:options.underline",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "t:names.announcement_bar",
+      "blocks": [
+        { "type": "announcement", "settings": { "text": "Livraison estimée sous 48h" } },
+        { "type": "announcement", "settings": { "text": "Consectetur.", "underline": true } }
+      ]
+    }
+  ]
+}
+{% endschema %}
