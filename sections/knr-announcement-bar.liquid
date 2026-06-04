@@ -1,25 +1,45 @@
-{%- comment -%}
-  KNR — Announcement bar.
-  Each message is a block driven from the theme editor.
-{%- endcomment -%}
+{%- liquid
+  assign autoplay = false
+  if section.blocks.size > 1
+    assign autoplay = true
+  endif
+-%}
+
+{%- if autoplay -%}
+  <script
+    src="{{ 'announcement-bar.js' | asset_url }}"
+    type="module"
+    fetchpriority="low"
+  ></script>
+{%- endif -%}
 
 <aside class="knr-announcement-bar">
-  <div class="knr-announcement-bar__inner">
-    {%- for block in section.blocks -%}
-      <span
-        class="knr-announcement-bar__item{% if block.settings.underline %} knr-announcement-bar__item--underline{% endif %}"
-        {{ block.shopify_attributes }}
-      >
-        {{- block.settings.text -}}
-      </span>
-    {%- endfor -%}
-  </div>
+  <announcement-bar-component
+    class="knr-announcement-bar__slider"
+    {% if autoplay %}
+      autoplay="{{ section.settings.speed }}" aria-live="polite"
+    {% endif %}
+  >
+    <div class="knr-announcement-bar__slides">
+      {%- for block in section.blocks -%}
+        <div
+          ref="slides[]"
+          class="knr-announcement-bar__slide{% if block.settings.underline %} knr-announcement-bar__slide--underline{% endif %}"
+          aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}"
+          {{ block.shopify_attributes }}
+        >
+          {{- block.settings.text -}}
+        </div>
+      {%- endfor -%}
+    </div>
+  </announcement-bar-component>
 </aside>
 
 {% stylesheet %}
   .knr-announcement-bar {
     --knr-bar-height: 32px;
     --knr-bar-underline-width: 0.8px;
+    --knr-bar-fade-duration: 0.5s;
 
     background: var(--knr-color-black);
     color: var(--knr-color-white);
@@ -29,41 +49,43 @@
     width: 100%;
   }
 
-  .knr-announcement-bar__inner {
+  .knr-announcement-bar__slider {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--knr-space-1);
     min-height: var(--knr-bar-height);
     padding-block: var(--knr-space-2);
     padding-inline: var(--knr-space-4);
   }
 
-  .knr-announcement-bar__item {
-    display: inline-block;
+  .knr-announcement-bar__slides {
+    display: grid;
+    grid-template-areas: 'stack';
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .knr-announcement-bar__slide {
+    grid-area: stack;
     text-align: center;
+    transition: opacity var(--knr-bar-fade-duration) ease-in-out,
+                visibility var(--knr-bar-fade-duration) ease-in-out;
   }
 
-  .knr-announcement-bar__item--underline {
-    border-block-end: var(--knr-bar-underline-width) solid currentColor;
-    padding-block-end: var(--knr-space-1);
+  .knr-announcement-bar__slide[aria-hidden='true'] {
+    opacity: 0;
+    visibility: hidden;
   }
 
-  .knr-announcement-bar__item + .knr-announcement-bar__item {
-    margin-inline-start: var(--knr-space-1);
+  .knr-announcement-bar__slide--underline {
+    text-decoration: underline;
+    text-decoration-thickness: var(--knr-bar-underline-width);
+    text-underline-offset: var(--knr-space-1);
   }
 
   @media screen and (min-width: 750px) {
     .knr-announcement-bar {
       --knr-bar-height: 36px;
-    }
-
-    .knr-announcement-bar__inner {
-      gap: var(--knr-space-3);
-    }
-
-    .knr-announcement-bar__item + .knr-announcement-bar__item {
-      margin-inline-start: var(--knr-space-3);
     }
   }
 {% endstylesheet %}
@@ -76,6 +98,17 @@
   "enabled_on": {
     "templates": ["product"]
   },
+  "settings": [
+    {
+      "type": "range",
+      "id": "speed",
+      "label": "t:settings.scroll_speed",
+      "min": 2,
+      "max": 10,
+      "default": 5,
+      "unit": "sec"
+    }
+  ],
   "blocks": [
     {
       "type": "announcement",
