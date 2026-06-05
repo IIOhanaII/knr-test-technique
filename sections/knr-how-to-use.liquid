@@ -1,0 +1,280 @@
+{%- liquid
+  assign usage_steps = product.metafields.knr.usage_steps.value
+-%}
+{%- if usage_steps != blank and usage_steps.size > 0 -%}
+  <section class="knr-how-to-use" data-section-id="{{ section.id }}">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="knr-how-to-use__heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    <ul class="knr-how-to-use__list" role="list" data-knr-htu-list>
+      {%- for step in usage_steps -%}
+        {%- liquid
+          assign step_image = step.image.value
+          assign step_link = step.link.value
+          assign step_link_label = step.link_label.value | default: section.settings.default_link_label
+          assign step_number = forloop.index
+        -%}
+        <li class="knr-how-to-use__card">
+          <div class="knr-how-to-use__media">
+            {%- if step_image != blank -%}
+              {{
+                step_image
+                | image_url: width: 510
+                | image_tag:
+                  loading: 'lazy',
+                  width: step_image.width,
+                  height: step_image.height,
+                  widths: '255, 442, 510, 884',
+                  sizes: '(min-width: 750px) 33vw, 255px',
+                  class: 'knr-how-to-use__image',
+                  alt: step.title.value | default: product.title
+              }}
+            {%- endif -%}
+          </div>
+
+          <div class="knr-how-to-use__details">
+            <p class="knr-how-to-use__step-number">
+              {%- if step_number < 10 -%}0{% endif %}{{ step_number }}
+            </p>
+            {%- if step.title.value != blank -%}
+              <p class="knr-how-to-use__card-title">{{ step.title.value }}</p>
+            {%- endif -%}
+            {%- if step.description.value != blank -%}
+              <p class="knr-how-to-use__card-text">{{ step.description.value }}</p>
+            {%- endif -%}
+            {%- if step_link != blank -%}
+              <a class="knr-how-to-use__link" href="{{ step_link }}">{{ step_link_label }}</a>
+            {%- endif -%}
+          </div>
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    <div class="knr-how-to-use__progress" data-knr-htu-progress aria-hidden="true">
+      <span class="knr-how-to-use__progress-thumb" data-knr-htu-progress-thumb></span>
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .knr-how-to-use {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-10);
+    padding-block: var(--knr-space-10) 4rem;
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-how-to-use__heading {
+    margin: 0;
+    padding-inline: var(--knr-space-6);
+    width: 100%;
+    font-weight: 400;
+    font-size: 2rem;
+    letter-spacing: -1.28px;
+    line-height: 40px;
+    text-align: center;
+  }
+
+  .knr-how-to-use__list {
+    display: flex;
+    gap: var(--knr-space-2);
+    margin: 0;
+    padding: 0 var(--knr-space-6);
+    list-style: none;
+    width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .knr-how-to-use__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .knr-how-to-use__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-6);
+    flex: 0 0 255px;
+    scroll-snap-align: start;
+  }
+
+  .knr-how-to-use__media {
+    aspect-ratio: 1;
+    background: var(--knr-color-surface-2);
+    overflow: hidden;
+  }
+
+  .knr-how-to-use__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-how-to-use__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-4);
+    padding-inline: var(--knr-space-4);
+  }
+
+  .knr-how-to-use__step-number {
+    margin: 0;
+    font-size: 0.875rem;
+    letter-spacing: -0.56px;
+    line-height: 14px;
+    text-transform: uppercase;
+  }
+
+  .knr-how-to-use__card-title {
+    margin: 0;
+    font-size: var(--knr-text-xl);
+    letter-spacing: -0.48px;
+    line-height: 32px;
+  }
+
+  .knr-how-to-use__card-text {
+    margin: 0;
+    font-size: 0.875rem;
+    letter-spacing: -0.28px;
+    line-height: 22px;
+  }
+
+  .knr-how-to-use__link {
+    align-self: flex-start;
+    color: inherit;
+    text-decoration: none;
+    border-block-end: 0.8px solid var(--knr-color-black);
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+  }
+
+  .knr-how-to-use__progress {
+    position: relative;
+    align-self: center;
+    width: 64px;
+    height: 1px;
+    background: var(--knr-color-surface-3);
+  }
+
+  .knr-how-to-use__progress-thumb {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 33%;
+    background: var(--knr-color-black);
+    will-change: transform;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-how-to-use {
+      align-items: stretch;
+      gap: var(--knr-space-10);
+      padding-block: var(--knr-space-10) 7.5rem;
+    }
+
+    .knr-how-to-use__heading {
+      padding-inline: 2.5rem;
+      text-align: start;
+    }
+
+    .knr-how-to-use__list {
+      padding-inline: 2.5rem;
+      overflow-x: visible;
+      scroll-snap-type: none;
+    }
+
+    .knr-how-to-use__card {
+      flex: 1 0 0;
+      min-width: 0;
+    }
+
+    .knr-how-to-use__details {
+      padding-inline: var(--knr-space-6);
+    }
+
+    .knr-how-to-use__progress {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    function setup(section) {
+      var list = section.querySelector('[data-knr-htu-list]');
+      var track = section.querySelector('[data-knr-htu-progress]');
+      var thumb = section.querySelector('[data-knr-htu-progress-thumb]');
+      if (!list || !track || !thumb) return;
+
+      function update() {
+        var max = list.scrollWidth - list.clientWidth;
+        if (max <= 1) {
+          track.style.visibility = 'hidden';
+          return;
+        }
+        track.style.visibility = '';
+        var trackW = track.clientWidth;
+        var thumbW = Math.max(trackW * (list.clientWidth / list.scrollWidth), 8);
+        var progress = list.scrollLeft / max;
+        thumb.style.width = thumbW + 'px';
+        thumb.style.transform = 'translateX(' + progress * (trackW - thumbW) + 'px)';
+      }
+
+      list.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    }
+
+    function init() {
+      document.querySelectorAll('.knr-how-to-use').forEach(setup);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "KNR How to use",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Les étapes sont gérées par produit via le metafield knr.usage_steps (liste de métaobjets « KNR — Usage step » : image + titre + description + lien). La numérotation (01, 02…) est automatique. Si le metafield est vide, la section n'apparaît pas."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Titre",
+      "default": "How to use"
+    },
+    {
+      "type": "text",
+      "id": "default_link_label",
+      "label": "Libellé de lien par défaut",
+      "default": "Lire plus"
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR How to use"
+    }
+  ]
+}
+{% endschema %}

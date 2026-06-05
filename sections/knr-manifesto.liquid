@@ -1,11 +1,14 @@
 {%- liquid
-  # Product-specific content from the knr.manifesto metaobject, with
-  # section settings as fallback (editor preview / missing metaobject).
+  # Product-specific content from the knr.manifesto metaobject.
+  # No fallback: the section renders only when the metaobject is set.
   assign mo = product.metafields.knr.manifesto.value
-  assign m_image = mo.image.value | default: section.settings.image
-  assign m_eyebrow = mo.eyebrow.value | default: section.settings.eyebrow
-  assign m_statement = mo.statement.value | default: section.settings.statement
-  assign m_attribution = mo.attribution.value | default: section.settings.attribution
+-%}
+{%- if mo != blank -%}
+{%- liquid
+  assign m_image = mo.image.value
+  assign m_eyebrow = mo.eyebrow.value
+  assign m_statement = mo.statement.value
+  assign m_attribution = mo.attribution.value
 
   assign current_variant = product.selected_or_first_available_variant
   assign qs_form_id = 'knr-quickshop-' | append: section.id
@@ -42,7 +45,9 @@
 
     <div class="knr-manifesto__content">
       {%- if m_statement != blank -%}
-        <div class="knr-manifesto__statement">{{ m_statement }}</div>
+        <div class="knr-manifesto__statement">
+          {%- render 'knr-richtext', value: m_statement -%}
+        </div>
       {%- endif -%}
       {%- if m_attribution != blank -%}
         <p class="knr-manifesto__attribution">{{ m_attribution }}</p>
@@ -133,12 +138,12 @@
     </div>
   {%- endif -%}
 </section>
+{%- endif -%}
 
 {% stylesheet %}
   .knr-manifesto {
     position: relative;
     width: 100%;
-    overflow: hidden;
     background: var(--knr-color-surface-3);
     color: var(--knr-color-white);
     font-family: var(--knr-font-sans);
@@ -252,8 +257,9 @@
 
     .knr-manifesto__quickshop {
       position: absolute;
-      inset-block-end: 2.5rem;
+      inset-block-end: 0;
       inset-inline-end: 2.5rem;
+      transform: translateY(50%);
       z-index: 3;
       display: flex;
       align-items: center;
@@ -391,30 +397,7 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Contenu géré par produit via le metafield knr.manifesto (métaobjet « KNR — Manifesto » : image + sur-titre + texte + attribution). Les réglages ci-dessous servent de valeurs de repli si le métaobjet n'est pas défini."
-    },
-    {
-      "type": "image_picker",
-      "id": "image",
-      "label": "Image de fond (repli)"
-    },
-    {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Sur-titre",
-      "default": "Notre engagement pour une beauté régénérée"
-    },
-    {
-      "type": "richtext",
-      "id": "statement",
-      "label": "Texte",
-      "default": "<p>Fusionnant l'huile de rosier muscat, le rétinol végétal et l'extrait de cactus, notre sérum pénètre en profondeur pour stimuler le renouvellement cellulaire, atténuer les rides et redonner à la peau son éclat et sa fermeté naturels.</p>"
-    },
-    {
-      "type": "text",
-      "id": "attribution",
-      "label": "Attribution",
-      "default": "Sophie M."
+      "content": "Contenu géré par produit via le metafield knr.manifesto (métaobjet « KNR — Manifesto » : image + sur-titre + texte + attribution). La section ne s'affiche que si ce metafield est renseigné."
     }
   ],
   "presets": [
