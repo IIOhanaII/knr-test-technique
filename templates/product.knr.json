@@ -51,7 +51,15 @@
         }
       },
       "block_order": ["reinsurance"]
+    },
+    "knr-manifesto": {
+      "type": "knr-manifesto",
+      "settings": {
+        "eyebrow": "Notre engagement pour une beauté régénérée",
+        "statement": "<p>Fusionnant l'huile de rosier muscat, le rétinol végétal et l'extrait de cactus, notre sérum pénètre en profondeur pour stimuler le renouvellement cellulaire, atténuer les rides et redonner à la peau son éclat et sa fermeté naturels.</p>",
+        "attribution": "Sophie M."
+      }
     }
   },
-  "order": ["knr-product-hero"]
+  "order": ["knr-product-hero", "knr-manifesto"]
 }

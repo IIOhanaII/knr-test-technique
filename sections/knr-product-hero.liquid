@@ -1022,11 +1022,18 @@
       --knr-hero-card-padding: 40px;
 
       position: relative;
-      display: block;
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        calc(var(--knr-hero-card-width) + var(--knr-hero-card-right));
+      align-items: start;
       background: var(--knr-color-surface-1);
     }
 
     .knr-product-hero__media {
+      grid-column: 1 / -1;
+      grid-row: 1 / 2;
       width: 100%;
       height: auto;
       aspect-ratio: auto;
@@ -1102,12 +1109,14 @@
     }
 
     .knr-product-hero__details {
-      position: absolute;
-      top: var(--knr-hero-card-top);
-      inset-inline-end: var(--knr-hero-card-right);
+      grid-column: 3 / 4;
+      grid-row: 1 / 2;
+      z-index: 2;
+      align-self: start;
       width: var(--knr-hero-card-width);
-      max-width: calc(100% - (var(--knr-hero-card-right) * 2));
-      margin: 0;
+      margin-block-start: var(--knr-hero-card-top);
+      margin-inline-start: auto;
+      margin-inline-end: var(--knr-hero-card-right);
       padding: var(--knr-hero-card-padding);
       background: var(--knr-color-white);
       grid-template-columns: 1fr auto;
