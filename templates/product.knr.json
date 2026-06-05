@@ -60,7 +60,19 @@
       "settings": {
         "heading": "How to use"
       }
+    },
+    "knr-before-after": {
+      "type": "knr-before-after"
+    },
+    "knr-reviews": {
+      "type": "knr-reviews"
     }
   },
-  "order": ["knr-product-hero", "knr-manifesto", "knr-how-to-use"]
+  "order": [
+    "knr-product-hero",
+    "knr-manifesto",
+    "knr-how-to-use",
+    "knr-before-after",
+    "knr-reviews"
+  ]
 }

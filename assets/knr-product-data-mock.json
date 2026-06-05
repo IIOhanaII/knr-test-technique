@@ -1,4 +1,5 @@
 {
+  "product": "Sérum Précieux Régénérant",
   "rating": {
     "value": 4.7,
     "count": 200,
@@ -7,5 +8,22 @@
   "scores": [
     { "label": "Yuka", "value": "100/100" },
     { "label": "INCI Beauty", "value": "20/20" }
+  ],
+  "reviews": [
+    {
+      "author": "Clara T.",
+      "rating": 5,
+      "text": "J'utilise ce sérum depuis trois mois et la différence est saisissante. Mes rides d'expression se sont considérablement atténuées et mon teint a retrouvé une luminosité que je n'avais plus depuis des années. Une texture soyeuse qui pénètre instantanément. Je ne peux plus m'en passer."
+    },
+    {
+      "author": "Jon Doe",
+      "rating": 5,
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+    },
+    {
+      "author": "Jon Doe",
+      "rating": 4,
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident."
+    }
   ]
 }
