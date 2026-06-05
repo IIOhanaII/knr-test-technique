@@ -1,0 +1,55 @@
+{%- doc -%}
+  Renders a Shopify rich_text JSON tree as HTML. Needed for metaobject
+  rich text fields which are not auto-converted by Shopify Liquid.
+
+  @param {object} value - The rich_text root node ({type: 'root', children: [...]})
+{%- enddoc -%}
+
+{%- if value.children -%}
+  {%- for block in value.children -%}
+    {%- case block.type -%}
+      {%- when 'paragraph' -%}
+        <p>
+          {%- for child in block.children -%}
+            {%- if child.type == 'text' -%}
+              {%- if child.bold and child.italic -%}
+                <strong><em>{{ child.value }}</em></strong>
+              {%- elsif child.bold -%}
+                <strong>{{ child.value }}</strong>
+              {%- elsif child.italic -%}
+                <em>{{ child.value }}</em>
+              {%- else -%}
+                {{- child.value -}}
+              {%- endif -%}
+            {%- elsif child.type == 'link' -%}
+              <a
+                href="{{ child.url }}"
+                {% if child.target == '_blank' %}target="_blank" rel="noopener"{% endif %}
+              >
+                {%- for link_child in child.children -%}{{- link_child.value -}}{%- endfor -%}
+              </a>
+            {%- endif -%}
+          {%- endfor -%}
+        </p>
+      {%- when 'heading' -%}
+        {%- assign heading_level = block.level | default: 2 -%}
+        <h{{ heading_level }}>
+          {%- for child in block.children -%}{{- child.value -}}{%- endfor -%}
+        </h{{ heading_level }}>
+      {%- when 'list' -%}
+        {%- if block.listType == 'ordered' -%}<ol>{%- else -%}<ul>{%- endif -%}
+          {%- for item in block.children -%}
+            <li>
+              {%- for li_child in item.children -%}
+                {%- if li_child.type == 'text' -%}
+                  {{- li_child.value -}}
+                {%- elsif li_child.children -%}
+                  {%- for sub in li_child.children -%}{{- sub.value -}}{%- endfor -%}
+                {%- endif -%}
+              {%- endfor -%}
+            </li>
+          {%- endfor -%}
+        {%- if block.listType == 'ordered' -%}</ol>{%- else -%}</ul>{%- endif -%}
+    {%- endcase -%}
+  {%- endfor -%}
+{%- endif -%}

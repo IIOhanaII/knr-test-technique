@@ -1,34 +1,57 @@
 {
+  "layout": "knr",
   "sections": {
-    "knr-announcement": {
-      "type": "knr-announcement-bar",
+    "knr-product-hero": {
+      "type": "knr-product-hero",
+      "settings": {
+        "show_reviews": true,
+        "show_scores": true,
+        "show_accordions": true,
+        "show_complementary": true,
+        "complementary_title": "Complétez votre rituel"
+      },
       "blocks": {
-        "msg-1": {
-          "type": "announcement",
+        "reinsurance": {
+          "type": "knr-reinsurance",
           "settings": {
-            "text": "Livraison estimée sous 48h"
-          }
-        },
-        "msg-2": {
-          "type": "announcement",
-          "settings": {
-            "text": "Consectetur.",
-            "underline": true
-          }
+            "message_speed": 4
+          },
+          "blocks": {
+            "reinsurance-1": {
+              "type": "knr-reinsurance-message",
+              "settings": {
+                "text": "En stock, livraison estimée {delivery}."
+              }
+            },
+            "reinsurance-2": {
+              "type": "knr-reinsurance-message",
+              "settings": {
+                "text": "Livraison offerte dès 60 € d'achat."
+              }
+            },
+            "reinsurance-3": {
+              "type": "knr-reinsurance-message",
+              "settings": {
+                "text": "Retours sous 30 jours."
+              }
+            },
+            "reinsurance-4": {
+              "type": "knr-reinsurance-message",
+              "settings": {
+                "text": "Paiement sécurisé."
+              }
+            }
+          },
+          "block_order": [
+            "reinsurance-1",
+            "reinsurance-2",
+            "reinsurance-3",
+            "reinsurance-4"
+          ]
         }
       },
-      "block_order": ["msg-1", "msg-2"]
-    },
-    "knr-header": {
-      "type": "knr-header",
-      "settings": {
-        "menu": "main-menu",
-        "show_location": true,
-        "show_account": true,
-        "show_search": true,
-        "show_burger": true
-      }
+      "block_order": ["reinsurance"]
     }
   },
-  "order": ["knr-announcement", "knr-header"]
+  "order": ["knr-product-hero"]
 }

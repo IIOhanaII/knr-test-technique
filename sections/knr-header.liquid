@@ -110,11 +110,14 @@
     --knr-header-cart-bubble-size: 12px;
     --knr-header-cart-bubble-font-size: 8px;
 
+    position: relative;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
     min-height: var(--knr-header-height);
+    margin-block-end: calc(var(--knr-header-height) * -1);
     padding-inline: var(--knr-container-padding-mobile);
     color: var(--knr-color-white);
     font-family: var(--knr-font-sans);
@@ -253,7 +256,7 @@
   "tag": "header",
   "class": "knr-section",
   "enabled_on": {
-    "templates": ["product"]
+    "groups": ["header"]
   },
   "settings": [
     {

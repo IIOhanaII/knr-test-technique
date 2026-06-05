@@ -1,0 +1,11 @@
+{
+  "rating": {
+    "value": 4.7,
+    "count": 200,
+    "label": "avis"
+  },
+  "scores": [
+    { "label": "Yuka", "value": "100/100" },
+    { "label": "INCI Beauty", "value": "20/20" }
+  ]
+}
