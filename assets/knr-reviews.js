@@ -70,6 +70,25 @@ class KnrReviews {
   #bind() {
     this.prevBtn?.addEventListener('click', () => this.#go(-1));
     this.nextBtn?.addEventListener('click', () => this.#go(1));
+
+    let startX = null;
+    this.root.addEventListener(
+      'touchstart',
+      (event) => {
+        startX = event.touches[0].clientX;
+      },
+      { passive: true }
+    );
+    this.root.addEventListener(
+      'touchend',
+      (event) => {
+        if (startX === null) return;
+        const deltaX = event.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(deltaX) > 40) this.#go(deltaX < 0 ? 1 : -1);
+      },
+      { passive: true }
+    );
   }
 
   #go(direction) {

@@ -66,6 +66,12 @@
     },
     "knr-reviews": {
       "type": "knr-reviews"
+    },
+    "knr-faqs": {
+      "type": "knr-faqs",
+      "settings": {
+        "heading": "Questions fréquentes"
+      }
     }
   },
   "order": [
@@ -73,6 +79,7 @@
     "knr-manifesto",
     "knr-how-to-use",
     "knr-before-after",
-    "knr-reviews"
+    "knr-reviews",
+    "knr-faqs"
   ]
 }

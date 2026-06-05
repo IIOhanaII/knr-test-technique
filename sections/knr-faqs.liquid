@@ -1,0 +1,163 @@
+{%- liquid
+  # FAQ items are product-specific: knr.faqs metaobject list.
+  # No fallback: the section renders only when at least one item exists.
+  assign faqs = product.metafields.knr.faqs.value
+-%}
+{%- if faqs != blank and faqs.size > 0 -%}
+  <section class="knr-faqs" data-section-id="{{ section.id }}">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="knr-faqs__heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    <div class="knr-faqs__list">
+      {%- for item in faqs -%}
+        <details class="knr-faqs__item">
+          <summary class="knr-faqs__question">
+            <span class="knr-faqs__question-text">{{ item.question.value }}</span>
+            <span class="knr-faqs__icon" aria-hidden="true">
+              {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+            </span>
+          </summary>
+          <div class="knr-faqs__answer">
+            {%- render 'knr-richtext', value: item.answer.value -%}
+          </div>
+        </details>
+      {%- endfor -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .knr-faqs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-10);
+    padding: 4rem var(--knr-space-6);
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-faqs__heading {
+    margin: 0;
+    font-weight: 400;
+    font-size: 2rem;
+    letter-spacing: -1.28px;
+    line-height: 40px;
+    text-align: center;
+  }
+
+  .knr-faqs__list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .knr-faqs__item {
+    border-block-start: 0.8px solid var(--knr-color-border);
+    padding-block: var(--knr-space-5);
+  }
+
+  .knr-faqs__item:last-child {
+    border-block-end: 0.8px solid var(--knr-color-border);
+  }
+
+  .knr-faqs__question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--knr-space-4);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .knr-faqs__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .knr-faqs__question-text {
+    font-size: var(--knr-text-xl);
+    letter-spacing: -0.48px;
+    line-height: 32px;
+  }
+
+  .knr-faqs__icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 8px;
+    height: 8px;
+    transform: rotate(90deg);
+    transition: transform 0.2s ease;
+  }
+
+  .knr-faqs__item[open] .knr-faqs__icon {
+    transform: rotate(-90deg);
+  }
+
+  .knr-faqs__icon svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .knr-faqs__answer {
+    margin-block-start: var(--knr-space-4);
+    font-size: 0.875rem;
+    letter-spacing: -0.28px;
+    line-height: 22px;
+  }
+
+  .knr-faqs__answer > * {
+    margin: 0;
+  }
+
+  .knr-faqs__answer > * + * {
+    margin-block-start: var(--knr-space-2);
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-faqs {
+      padding: var(--knr-space-16) 2.5rem;
+    }
+
+    .knr-faqs__heading {
+      font-size: 2.5rem;
+      letter-spacing: -1.6px;
+      line-height: 48px;
+    }
+
+    .knr-faqs__list {
+      max-width: 720px;
+      margin-inline: auto;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "KNR FAQs",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Les questions/réponses sont gérées par produit via le metafield knr.faqs (liste de métaobjets « KNR — FAQ item » : question + réponse rich text). Si le metafield est vide, la section n'apparaît pas."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Titre",
+      "default": "Questions fréquentes"
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR FAQs"
+    }
+  ]
+}
+{% endschema %}
