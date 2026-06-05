@@ -30,6 +30,7 @@ class KnrReviews {
       }
       this.#render();
       this.#bind();
+      this.root.hidden = false;
     } catch (err) {
       this.root.hidden = true;
     }

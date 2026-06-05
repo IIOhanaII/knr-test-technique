@@ -63,8 +63,7 @@
         </div>
 
         <span class="knr-before-after__handle" data-knr-ba-handle aria-hidden="true">
-          {{- 'icon-chevron-left.svg' | inline_asset_content -}}
-          {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+          {{- 'knr-icon-reveal.svg' | inline_asset_content -}}
         </span>
 
         <input
@@ -132,6 +131,13 @@
     position: relative;
     width: 100%;
     height: 100%;
+    /* Isolate so each layer's label stays trapped in its own stacking
+       context and can't paint over the other layer. */
+    isolation: isolate;
+  }
+
+  .knr-before-after__layer--after {
+    z-index: 0;
   }
 
   .knr-before-after__layer--before {
@@ -149,7 +155,7 @@
   .knr-before-after__label {
     position: absolute;
     inset-block-start: var(--knr-space-6);
-    z-index: 2;
+    z-index: 1;
     font-size: 0.875rem;
     letter-spacing: -0.28px;
     line-height: 14px;
