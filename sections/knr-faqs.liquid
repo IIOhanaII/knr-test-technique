@@ -13,7 +13,9 @@
       {%- for item in faqs -%}
         <details class="knr-faqs__item">
           <summary class="knr-faqs__question">
-            <span class="knr-faqs__question-text">{{ item.question.value }}</span>
+            <span class="knr-faqs__question-text">
+              {%- render 'knr-richtext', value: item.question.value -%}
+            </span>
             <span class="knr-faqs__icon" aria-hidden="true">
               {{- 'icon-chevron-right.svg' | inline_asset_content -}}
             </span>
@@ -79,6 +81,10 @@
     font-size: var(--knr-text-xl);
     letter-spacing: -0.48px;
     line-height: 32px;
+  }
+
+  .knr-faqs__question-text > * {
+    margin: 0;
   }
 
   .knr-faqs__icon {
