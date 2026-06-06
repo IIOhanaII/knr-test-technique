@@ -1,8 +1,18 @@
 {%- if section.blocks.size > 0 -%}
-  <section class="knr-reinsurance-bar" data-section-id="{{ section.id }}">
-    <ul class="knr-reinsurance-bar__list" role="list" data-knr-reinsurance-list>
+  <section
+    class="knr-reinsurance-bar"
+    style="--knr-reinsurance-bar-bg: {{ section.settings.background }};"
+    data-section-id="{{ section.id }}"
+    data-knr-reinsurance-bar
+    data-knr-reinsurance-duration="{{ section.settings.rotation_speed | times: 1000 }}"
+  >
+    <ul class="knr-reinsurance-bar__list" role="list">
       {%- for block in section.blocks -%}
-        <li class="knr-reinsurance-bar__item" {{ block.shopify_attributes }}>
+        <li
+          class="knr-reinsurance-bar__item{% if forloop.first %} is-active{% endif %}"
+          data-knr-reinsurance-item
+          {{ block.shopify_attributes }}
+        >
           {%- if block.settings.title != blank -%}
             <p class="knr-reinsurance-bar__item-title">{{ block.settings.title }}</p>
           {%- endif -%}
@@ -14,12 +24,14 @@
     </ul>
 
     {%- if section.blocks.size > 1 -%}
-      <div class="knr-reinsurance-bar__dots" data-knr-reinsurance-dots aria-hidden="true">
+      <div class="knr-reinsurance-bar__steps" data-knr-reinsurance-steps aria-hidden="true">
         {%- for block in section.blocks -%}
           <span
-            class="knr-reinsurance-bar__dot{% if forloop.first %} is-active{% endif %}"
-            data-knr-reinsurance-dot
-          ></span>
+            class="knr-reinsurance-bar__step{% if forloop.first %} is-active{% endif %}"
+            data-knr-reinsurance-step
+          >
+            <span class="knr-reinsurance-bar__step-fill"></span>
+          </span>
         {%- endfor -%}
       </div>
     {%- endif -%}
@@ -33,35 +45,35 @@
     align-items: center;
     gap: var(--knr-space-8);
     padding-block: var(--knr-space-12);
-    background: var(--knr-color-bg);
+    background: var(--knr-reinsurance-bar-bg, var(--knr-color-surface-3));
     color: var(--knr-color-black);
     font-family: var(--knr-font-sans);
   }
 
   .knr-reinsurance-bar__list {
-    display: flex;
+    display: grid;
     margin: 0;
     padding: 0;
     list-style: none;
     width: 100%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .knr-reinsurance-bar__list::-webkit-scrollbar {
-    display: none;
   }
 
   .knr-reinsurance-bar__item {
+    grid-area: 1 / 1;
     display: flex;
-    flex: 0 0 100%;
     flex-direction: column;
     align-items: center;
     gap: var(--knr-space-4);
     padding-inline: var(--knr-space-6);
-    scroll-snap-align: center;
     text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease;
+  }
+
+  .knr-reinsurance-bar__item.is-active {
+    opacity: 1;
+    visibility: visible;
   }
 
   .knr-reinsurance-bar__item-title {
@@ -80,23 +92,44 @@
     line-height: 22px;
   }
 
-  .knr-reinsurance-bar__dots {
+  .knr-reinsurance-bar__steps {
     display: flex;
-    align-items: center;
     gap: var(--knr-space-2);
   }
 
-  .knr-reinsurance-bar__dot {
+  .knr-reinsurance-bar__step {
+    position: relative;
+    display: block;
     width: 24px;
     height: 1px;
+    overflow: hidden;
     background: var(--knr-color-accent);
     opacity: 0.5;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
   }
 
-  .knr-reinsurance-bar__dot.is-active {
+  .knr-reinsurance-bar__step-fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 0;
     background: var(--knr-color-black);
+  }
+
+  .knr-reinsurance-bar__step.is-active {
     opacity: 1;
+  }
+
+  .knr-reinsurance-bar__step.is-active .knr-reinsurance-bar__step-fill {
+    width: 100%;
+    transition: width var(--knr-reinsurance-duration, 4000ms) linear;
+  }
+
+  .knr-reinsurance-bar__step.is-done {
+    opacity: 1;
+  }
+
+  .knr-reinsurance-bar__step.is-done .knr-reinsurance-bar__step-fill {
+    width: 100%;
   }
 
   @media screen and (min-width: 750px) {
@@ -105,18 +138,30 @@
     }
 
     .knr-reinsurance-bar__list {
+      display: flex;
       padding-inline: 2.5rem;
-      overflow-x: visible;
-      scroll-snap-type: none;
     }
 
     .knr-reinsurance-bar__item {
       flex: 1 0 0;
       min-width: 0;
+      opacity: 1;
+      visibility: visible;
+      transition: none;
     }
 
-    .knr-reinsurance-bar__dots {
+    .knr-reinsurance-bar__steps {
       display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-reinsurance-bar__item {
+      transition: none;
+    }
+
+    .knr-reinsurance-bar__step.is-active .knr-reinsurance-bar__step-fill {
+      transition: none;
     }
   }
 {% endstylesheet %}
@@ -124,27 +169,52 @@
 {% javascript %}
   (function () {
     function setup(section) {
-      var list = section.querySelector('[data-knr-reinsurance-list]');
-      var dots = section.querySelectorAll('[data-knr-reinsurance-dot]');
-      if (!list || dots.length < 2) return;
+      var items = Array.prototype.slice.call(
+        section.querySelectorAll('[data-knr-reinsurance-item]')
+      );
+      var steps = Array.prototype.slice.call(
+        section.querySelectorAll('[data-knr-reinsurance-step]')
+      );
+      if (items.length < 2) return;
 
-      function update() {
-        var itemWidth = list.scrollWidth / dots.length;
-        if (itemWidth <= 0) return;
-        var index = Math.round(list.scrollLeft / itemWidth);
-        if (index < 0) index = 0;
-        if (index > dots.length - 1) index = dots.length - 1;
-        dots.forEach(function (dot, i) {
-          dot.classList.toggle('is-active', i === index);
+      var duration = parseInt(section.dataset.knrReinsuranceDuration || '4000', 10);
+      section.style.setProperty('--knr-reinsurance-duration', duration + 'ms');
+
+      var current = 0;
+      var timer;
+
+      function tick() {
+        items.forEach(function (item, i) {
+          item.classList.toggle('is-active', i === current);
         });
+
+        var step = steps[current];
+        if (step) {
+          void step.offsetWidth;
+          step.classList.add('is-active');
+        }
+
+        timer = window.setTimeout(function () {
+          if (step) {
+            step.classList.remove('is-active');
+            step.classList.add('is-done');
+          }
+          current += 1;
+          if (current >= items.length) {
+            current = 0;
+            steps.forEach(function (s) {
+              s.classList.remove('is-done');
+            });
+          }
+          tick();
+        }, duration);
       }
 
-      list.addEventListener('scroll', update, { passive: true });
-      update();
+      tick();
     }
 
     function init() {
-      document.querySelectorAll('.knr-reinsurance-bar').forEach(setup);
+      document.querySelectorAll('[data-knr-reinsurance-bar]').forEach(setup);
     }
 
     if (document.readyState === 'loading') {
@@ -163,6 +233,24 @@
   "enabled_on": {
     "templates": ["product"]
   },
+  "settings": [
+    {
+      "type": "color",
+      "id": "background",
+      "label": "Couleur de fond",
+      "default": "#dcd5c3"
+    },
+    {
+      "type": "range",
+      "id": "rotation_speed",
+      "label": "Vitesse de rotation (mobile)",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 4,
+      "unit": "s"
+    }
+  ],
   "blocks": [
     {
       "type": "reinsurance_item",
