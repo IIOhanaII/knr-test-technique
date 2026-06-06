@@ -72,6 +72,12 @@
       "settings": {
         "heading": "Questions fréquentes"
       }
+    },
+    "knr-latest-news": {
+      "type": "knr-latest-news",
+      "settings": {
+        "heading": "Latest news"
+      }
     }
   },
   "order": [
@@ -80,6 +86,7 @@
     "knr-how-to-use",
     "knr-before-after",
     "knr-reviews",
-    "knr-faqs"
+    "knr-faqs",
+    "knr-latest-news"
   ]
 }
