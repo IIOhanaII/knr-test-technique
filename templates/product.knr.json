@@ -64,13 +64,16 @@
     "knr-before-after": {
       "type": "knr-before-after"
     },
-    "knr-reviews": {
-      "type": "knr-reviews"
-    },
     "knr-faqs": {
       "type": "knr-faqs",
       "settings": {
         "heading": "Questions fréquentes"
+      }
+    },
+    "knr-review-list": {
+      "type": "knr-review-list",
+      "settings": {
+        "heading": "Avis clients"
       }
     },
     "knr-latest-news": {
@@ -78,6 +81,45 @@
       "settings": {
         "heading": "Latest news"
       }
+    },
+    "knr-reinsurance-bar": {
+      "type": "knr-reinsurance-bar",
+      "blocks": {
+        "reinsurance-1": {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Livraison offerte",
+            "text": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine."
+          }
+        },
+        "reinsurance-2": {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Retours gratuits",
+            "text": "Retours acceptés\njusqu'à 30 jours\naprès réception."
+          }
+        },
+        "reinsurance-3": {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Paiement sécurisé",
+            "text": "Paiement 100 % sécurisé\npar carte bancaire,\nPayPal ou virement."
+          }
+        },
+        "reinsurance-4": {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Service client",
+            "text": "Du lundi au vendredi\nde 9h à 18h par email\net téléphone."
+          }
+        }
+      },
+      "block_order": [
+        "reinsurance-1",
+        "reinsurance-2",
+        "reinsurance-3",
+        "reinsurance-4"
+      ]
     }
   },
   "order": [
@@ -85,8 +127,9 @@
     "knr-manifesto",
     "knr-how-to-use",
     "knr-before-after",
-    "knr-reviews",
     "knr-faqs",
-    "knr-latest-news"
+    "knr-review-list",
+    "knr-latest-news",
+    "knr-reinsurance-bar"
   ]
 }

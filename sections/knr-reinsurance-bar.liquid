@@ -1,0 +1,223 @@
+{%- if section.blocks.size > 0 -%}
+  <section class="knr-reinsurance-bar" data-section-id="{{ section.id }}">
+    <ul class="knr-reinsurance-bar__list" role="list" data-knr-reinsurance-list>
+      {%- for block in section.blocks -%}
+        <li class="knr-reinsurance-bar__item" {{ block.shopify_attributes }}>
+          {%- if block.settings.title != blank -%}
+            <p class="knr-reinsurance-bar__item-title">{{ block.settings.title }}</p>
+          {%- endif -%}
+          {%- if block.settings.text != blank -%}
+            <p class="knr-reinsurance-bar__item-text">{{ block.settings.text | newline_to_br }}</p>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    {%- if section.blocks.size > 1 -%}
+      <div class="knr-reinsurance-bar__dots" data-knr-reinsurance-dots aria-hidden="true">
+        {%- for block in section.blocks -%}
+          <span
+            class="knr-reinsurance-bar__dot{% if forloop.first %} is-active{% endif %}"
+            data-knr-reinsurance-dot
+          ></span>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .knr-reinsurance-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-8);
+    padding-block: var(--knr-space-12);
+    background: var(--knr-color-bg);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-reinsurance-bar__list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .knr-reinsurance-bar__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .knr-reinsurance-bar__item {
+    display: flex;
+    flex: 0 0 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-4);
+    padding-inline: var(--knr-space-6);
+    scroll-snap-align: center;
+    text-align: center;
+  }
+
+  .knr-reinsurance-bar__item-title {
+    margin: 0;
+    font-size: var(--knr-text-base);
+    letter-spacing: 0.6px;
+    line-height: 18px;
+    text-transform: uppercase;
+  }
+
+  .knr-reinsurance-bar__item-text {
+    margin: 0;
+    max-width: 220px;
+    font-size: var(--knr-text-base);
+    letter-spacing: -0.28px;
+    line-height: 22px;
+  }
+
+  .knr-reinsurance-bar__dots {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-reinsurance-bar__dot {
+    width: 24px;
+    height: 1px;
+    background: var(--knr-color-accent);
+    opacity: 0.5;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+  }
+
+  .knr-reinsurance-bar__dot.is-active {
+    background: var(--knr-color-black);
+    opacity: 1;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-reinsurance-bar {
+      padding-block: var(--knr-space-16);
+    }
+
+    .knr-reinsurance-bar__list {
+      padding-inline: 2.5rem;
+      overflow-x: visible;
+      scroll-snap-type: none;
+    }
+
+    .knr-reinsurance-bar__item {
+      flex: 1 0 0;
+      min-width: 0;
+    }
+
+    .knr-reinsurance-bar__dots {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    function setup(section) {
+      var list = section.querySelector('[data-knr-reinsurance-list]');
+      var dots = section.querySelectorAll('[data-knr-reinsurance-dot]');
+      if (!list || dots.length < 2) return;
+
+      function update() {
+        var itemWidth = list.scrollWidth / dots.length;
+        if (itemWidth <= 0) return;
+        var index = Math.round(list.scrollLeft / itemWidth);
+        if (index < 0) index = 0;
+        if (index > dots.length - 1) index = dots.length - 1;
+        dots.forEach(function (dot, i) {
+          dot.classList.toggle('is-active', i === index);
+        });
+      }
+
+      list.addEventListener('scroll', update, { passive: true });
+      update();
+    }
+
+    function init() {
+      document.querySelectorAll('.knr-reinsurance-bar').forEach(setup);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "KNR Reinsurance",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "blocks": [
+    {
+      "type": "reinsurance_item",
+      "name": "Argument de réassurance",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titre",
+          "default": "Livraison offerte"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Texte",
+          "info": "Les retours à la ligne sont conservés.",
+          "default": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR Reinsurance",
+      "blocks": [
+        {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Livraison offerte",
+            "text": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine."
+          }
+        },
+        {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Retours gratuits",
+            "text": "Retours acceptés\njusqu'à 30 jours\naprès réception."
+          }
+        },
+        {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Paiement sécurisé",
+            "text": "Paiement 100 % sécurisé\npar carte bancaire,\nPayPal ou virement."
+          }
+        },
+        {
+          "type": "reinsurance_item",
+          "settings": {
+            "title": "Service client",
+            "text": "Du lundi au vendredi\nde 9h à 18h par email\net téléphone."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
