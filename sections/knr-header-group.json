@@ -1,0 +1,36 @@
+{
+  "type": "header",
+  "name": "KNR Header",
+  "sections": {
+    "knr-announcement": {
+      "type": "knr-announcement-bar",
+      "blocks": {
+        "msg-1": {
+          "type": "announcement",
+          "settings": {
+            "text": "Livraison estimée sous 48h"
+          }
+        },
+        "msg-2": {
+          "type": "announcement",
+          "settings": {
+            "text": "Consectetur.",
+            "underline": true
+          }
+        }
+      },
+      "block_order": ["msg-1", "msg-2"]
+    },
+    "knr-header": {
+      "type": "knr-header",
+      "settings": {
+        "menu": "main-menu",
+        "show_location": true,
+        "show_account": true,
+        "show_search": true,
+        "show_burger": true
+      }
+    }
+  },
+  "order": ["knr-announcement", "knr-header"]
+}

@@ -1,0 +1,383 @@
+{%- liquid
+  assign menu = linklists[section.settings.menu]
+  assign show_account = false
+  if section.settings.show_account and shop.customer_accounts_enabled
+    assign show_account = true
+  endif
+-%}
+
+<script
+  src="{{ 'cart-icon.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<header
+  class="knr-header"
+  style="--knr-logo-height: {{ settings.logo_height | default: 36 }}px; --knr-logo-height-mobile: {{ settings.logo_height_mobile | default: 28 }}px;"
+>
+  <a
+    class="knr-header__logo"
+    href="{{ routes.root_url }}"
+    aria-label="{{ 'accessibility.home_logo_alt' | t: store_name: shop.name }}"
+  >
+    {%- if settings.logo != blank -%}
+      {{
+        settings.logo
+        | image_url: width: 320
+        | image_tag:
+          loading: 'eager',
+          fetchpriority: 'high',
+          class: 'knr-header__logo-image',
+          widths: '160, 320, 480',
+          alt: shop.name
+      }}
+    {%- else -%}
+      <span class="knr-header__logo-text">{{ shop.name }}</span>
+    {%- endif -%}
+  </a>
+
+  {%- if menu != blank and menu.links.size > 0 -%}
+    <nav class="knr-header__nav" aria-label="{{ 'accessibility.header_navigation_label' | t }}">
+      <ul class="knr-header__nav-list" role="list">
+        {%- for link in menu.links -%}
+          <li>
+            <a
+              class="knr-header__nav-link{% if link.active %} knr-header__nav-link--active{% endif %}"
+              href="{{ link.url }}"
+            >
+              {{- link.title -}}
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+  {%- endif -%}
+
+  <div class="knr-header__actions">
+    {%- if section.settings.show_location -%}
+      <a
+        class="knr-header__action"
+        href="{{ section.settings.location_url | default: '#' }}"
+        aria-label="{{ section.settings.location_label }}"
+      >
+        {{- 'knr-icon-marker-pin.svg' | inline_asset_content -}}
+      </a>
+    {%- endif -%}
+
+    {%- if show_account -%}
+      <a
+        class="knr-header__action knr-header__action--desktop"
+        href="{{ routes.account_url }}"
+        aria-label="{{ 'accessibility.account' | t }}"
+      >
+        {{- 'knr-icon-user.svg' | inline_asset_content -}}
+      </a>
+    {%- endif -%}
+
+    {%- if section.settings.show_search -%}
+      <a
+        class="knr-header__action"
+        href="{{ routes.search_url }}"
+        aria-label="{{ 'content.search' | t }}"
+      >
+        {{- 'knr-icon-search.svg' | inline_asset_content -}}
+      </a>
+    {%- endif -%}
+
+    <cart-icon class="knr-header__action knr-header__action--cart">
+      <a href="{{ routes.cart_url }}" aria-label="{{ 'accessibility.cart' | t }}">
+        {{- 'knr-icon-shopping-bag.svg' | inline_asset_content -}}
+        {%- render 'cart-bubble', limit: 100 -%}
+      </a>
+    </cart-icon>
+
+    {%- if section.settings.show_burger -%}
+      <button
+        class="knr-header__action knr-header__action--mobile"
+        type="button"
+        aria-label="{{ 'accessibility.menu' | t }}"
+      >
+        {{- 'knr-icon-menu.svg' | inline_asset_content -}}
+      </button>
+    {%- endif -%}
+  </div>
+</header>
+
+{% stylesheet %}
+  .knr-header {
+    --knr-header-height: 56px;
+    --knr-header-icon-size: 16px;
+    --knr-header-icon-size-user: 18px;
+    --knr-header-gap: var(--knr-space-4);
+    --knr-header-cart-bubble-size: 12px;
+    --knr-header-cart-bubble-font-size: 8px;
+
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--knr-header-height);
+    margin-block-end: calc(var(--knr-header-height) * -1);
+    padding-inline: var(--knr-container-padding-mobile);
+    color: var(--knr-color-white);
+    font-family: var(--knr-font-sans);
+    background: transparent;
+  }
+
+  /* Subtle dark gradient behind the transparent header so the white nav
+     stays legible over the hero image, fading downward onto the image. */
+  .knr-header::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: calc(var(--knr-header-height) * 2.5);
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Keep header content above the gradient scrim (avoids a -1 z-index that
+     some mobile browsers fail to paint over the hero image). */
+  .knr-header__logo,
+  .knr-header__nav,
+  .knr-header__actions {
+    position: relative;
+    z-index: 1;
+  }
+
+  .knr-header__logo {
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .knr-header__logo-image {
+    display: block;
+    height: var(--knr-logo-height-mobile, 28px);
+    max-height: none;
+    width: auto;
+  }
+
+  .knr-header__nav {
+    display: none;
+  }
+
+  .knr-header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-header-gap);
+  }
+
+  .knr-header__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--knr-header-icon-size);
+    height: var(--knr-header-icon-size);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .knr-header__action svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-header__action--desktop {
+    display: none;
+  }
+
+  .knr-header__action--cart {
+    position: relative;
+    width: var(--knr-header-icon-size);
+    height: var(--knr-header-icon-size);
+  }
+
+  .knr-header__action--cart > a {
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+    color: inherit;
+  }
+
+  .knr-header .cart-bubble {
+    position: absolute;
+    top: calc(var(--knr-header-cart-bubble-size) * -0.5);
+    inset-inline-end: calc(var(--knr-header-cart-bubble-size) * -0.5);
+    width: var(--knr-header-cart-bubble-size);
+    height: var(--knr-header-cart-bubble-size);
+    border-radius: 50%;
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    font-size: var(--knr-header-cart-bubble-font-size);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .knr-header .cart-bubble__background {
+    display: none;
+  }
+
+  .knr-header .cart-bubble__text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-header {
+      --knr-header-gap: var(--knr-space-3);
+
+      padding-inline: var(--knr-container-padding-desktop);
+    }
+
+    .knr-header__logo-image {
+      height: var(--knr-logo-height, 36px);
+    }
+
+    .knr-header__nav {
+      display: flex;
+    }
+
+    .knr-header__nav-list {
+      display: flex;
+      gap: var(--knr-space-6);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .knr-header__nav-link {
+      color: inherit;
+      text-decoration: none;
+      font-size: var(--knr-text-sm);
+    }
+
+    .knr-header__nav-link:hover,
+    .knr-header__nav-link--active {
+      text-decoration: underline;
+      text-underline-offset: var(--knr-space-1);
+    }
+
+    .knr-header__action--desktop {
+      display: inline-flex;
+    }
+
+    .knr-header__action--mobile {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /* Keep the cart bubble count in sync live (add-to-cart, quantity changes).
+     The KNR layout has no cart-drawer, so we update the bubble directly from
+     the cart:update event (authoritative cart in event.detail.resource, with
+     a /cart.js fallback) instead of relying on drawer-driven re-rendering. */
+  (function () {
+    function setCount(count) {
+      document.querySelectorAll('.knr-header .cart-bubble').forEach(function (bubble) {
+        var countEl = bubble.querySelector('.cart-bubble__text-count');
+        if (countEl) {
+          countEl.textContent = count > 0 && count < 100 ? String(count) : '';
+          countEl.classList.toggle('hidden', count === 0);
+        }
+        bubble.classList.toggle('visually-hidden', count === 0);
+      });
+    }
+
+    function refreshFromServer() {
+      fetch('/cart.js', { headers: { Accept: 'application/json' } })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (cart) { if (cart) setCount(cart.item_count || 0); })
+        .catch(function () {});
+    }
+
+    document.addEventListener('cart:update', function (event) {
+      var cart = event.detail && event.detail.resource;
+      if (cart && typeof cart.item_count === 'number') {
+        setCount(cart.item_count);
+      } else {
+        refreshFromServer();
+      }
+    });
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:names.header",
+  "tag": "header",
+  "class": "knr-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:settings.menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "header",
+      "content": "t:content.appearance"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_location",
+      "label": "t:settings.show_stores_link",
+      "info": "Affiche l'icône « épingle » qui pointe vers votre page magasins / store locator.",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "location_url",
+      "label": "t:settings.stores_link",
+      "info": "Destination de l'icône épingle (ex. page « Nos magasins »)."
+    },
+    {
+      "type": "text",
+      "id": "location_label",
+      "label": "t:settings.stores_label",
+      "info": "Texte d'accessibilité (aria-label) de l'icône épingle, lu par les lecteurs d'écran.",
+      "default": "Magasins"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "t:settings.show_account",
+      "info": "Le lien compte n'est visible que sur desktop.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "t:settings.show_search",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_burger",
+      "label": "t:settings.show_burger_menu",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.header"
+    }
+  ]
+}
+{% endschema %}

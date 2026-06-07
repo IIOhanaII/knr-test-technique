@@ -1,0 +1,302 @@
+{%- liquid
+  assign n_image = section.settings.image
+  assign n_heading = section.settings.heading
+  assign n_fine_print = section.settings.fine_print
+  assign n_placeholder = section.settings.placeholder | default: 'E-mail'
+  assign n_button_label = section.settings.button_label | default: 'S’inscrire'
+  assign form_id = 'knr-newsletter-' | append: section.id
+-%}
+<section class="knr-newsletter" data-section-id="{{ section.id }}">
+  <div class="knr-newsletter__inner">
+    {%- if n_image != blank -%}
+      <div class="knr-newsletter__media">
+        {{
+          n_image
+          | image_url: width: 1600
+          | image_tag:
+            loading: 'lazy',
+            width: n_image.width,
+            height: n_image.height,
+            widths: '375, 750, 1100, 1600',
+            sizes: '(min-width: 750px) 50vw, 100vw',
+            class: 'knr-newsletter__image',
+            alt: n_image.alt | default: n_heading
+        }}
+      </div>
+    {%- endif -%}
+
+    <div class="knr-newsletter__content">
+    {%- if n_heading != blank -%}
+      <h2 class="knr-newsletter__heading">{{ n_heading }}</h2>
+    {%- endif -%}
+
+    {%- form 'customer', id: form_id, class: 'knr-newsletter__form' -%}
+      <input type="hidden" name="contact[tags]" value="newsletter">
+
+      <div class="knr-newsletter__field">
+        <label class="visually-hidden" for="{{ form_id }}-email">
+          {{- 'blocks.email_signup.label' | t | default: 'E-mail' -}}
+        </label>
+        <input
+          id="{{ form_id }}-email"
+          class="knr-newsletter__input"
+          type="email"
+          name="contact[email]"
+          value="{{ form.email }}"
+          placeholder="{{ n_placeholder }}"
+          autocorrect="off"
+          autocapitalize="off"
+          autocomplete="email"
+          required
+          {% if form.errors %}
+            aria-invalid="true"
+            aria-describedby="{{ form_id }}-error"
+          {% elsif form.posted_successfully? %}
+            aria-describedby="{{ form_id }}-success"
+          {% endif %}
+        >
+        <button type="submit" class="knr-newsletter__button" name="commit">
+          {{- n_button_label -}}
+        </button>
+      </div>
+
+      {%- if form.errors -%}
+        <p id="{{ form_id }}-error" class="knr-newsletter__message knr-newsletter__message--error" tabindex="-1">
+          {{- form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email -}}
+        </p>
+      {%- elsif form.posted_successfully? -%}
+        <p id="{{ form_id }}-success" class="knr-newsletter__message knr-newsletter__message--success" tabindex="-1">
+          {{- 'blocks.email_signup.success' | t | default: 'Merci de vous être abonné(e) !' -}}
+        </p>
+      {%- endif -%}
+    {%- endform -%}
+
+    {%- if n_fine_print != blank -%}
+        <p class="knr-newsletter__fine-print">{{ n_fine_print }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .knr-newsletter {
+    padding: 0 var(--knr-container-padding-mobile) var(--knr-space-10);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-newsletter__inner {
+    display: flex;
+    flex-direction: column;
+    max-width: var(--knr-container-max);
+    margin-inline: auto;
+    background: var(--knr-color-white);
+    overflow: hidden;
+  }
+
+  .knr-newsletter__media {
+    width: 100%;
+  }
+
+  .knr-newsletter__image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-newsletter__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-6);
+    padding: var(--knr-space-8) var(--knr-space-6);
+  }
+
+  .knr-newsletter__heading {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.75rem;
+    letter-spacing: -1.12px;
+    line-height: 34px;
+  }
+
+  .knr-newsletter__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-4);
+    margin: 0;
+  }
+
+  .knr-newsletter__field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-newsletter__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 56px;
+    padding-inline: var(--knr-space-4);
+    background: var(--knr-color-white);
+    border: 0.8px solid var(--knr-color-border);
+    border-radius: 2px;
+    color: var(--knr-color-black);
+    font: inherit;
+    font-size: var(--knr-text-base);
+    letter-spacing: -0.28px;
+  }
+
+  .knr-newsletter__input::placeholder {
+    color: rgb(0 0 0 / 0.5);
+  }
+
+  .knr-newsletter__input:focus-visible {
+    outline: 1px solid var(--knr-color-black);
+    outline-offset: -1px;
+  }
+
+  .knr-newsletter__button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 56px;
+    padding-inline: var(--knr-space-6);
+    background: var(--knr-color-black);
+    color: var(--knr-color-white);
+    border: 0;
+    border-radius: 2px;
+    font: inherit;
+    font-size: 0.8125rem;
+    letter-spacing: -0.26px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .knr-newsletter__button:hover {
+    opacity: 0.85;
+  }
+
+  .knr-newsletter__message {
+    margin: 0;
+    font-size: var(--knr-text-base);
+    letter-spacing: -0.28px;
+    line-height: 20px;
+  }
+
+  .knr-newsletter__message--error {
+    color: #c0392b;
+  }
+
+  .knr-newsletter__message--success {
+    color: var(--knr-color-accent);
+  }
+
+  .knr-newsletter__fine-print {
+    margin: 0;
+    font-size: var(--knr-text-xs);
+    letter-spacing: -0.22px;
+    line-height: 16px;
+    color: rgb(0 0 0 / 0.5);
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-newsletter {
+      padding: var(--knr-space-16) var(--knr-container-padding-desktop) 7.5rem var(--knr-container-padding-desktop);
+    }
+
+    .knr-newsletter__inner {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .knr-newsletter__media {
+      flex: 1 1 50%;
+    }
+
+    .knr-newsletter__image {
+      height: 100%;
+    }
+
+    .knr-newsletter__content {
+      flex: 1 1 50%;
+      justify-content: center;
+      gap: var(--knr-space-4);
+      padding: var(--knr-space-16) 2.5rem;
+    }
+
+    .knr-newsletter__heading {
+      font-size: var(--knr-text-2xl);
+      letter-spacing: -1.28px;
+      line-height: 40px;
+      padding-bottom: var(--knr-space-6);
+    }
+
+    /* Desktop: input and button sit side by side, joined. */
+    .knr-newsletter__field {
+      flex-direction: row;
+      gap: 0;
+    }
+
+    .knr-newsletter__input {
+      border-inline-end: 0;
+      border-radius: 2px 0 0 2px;
+    }
+
+    .knr-newsletter__button {
+      width: auto;
+      min-width: 160px;
+      border-radius: 0 2px 2px 0;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "KNR Newsletter",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Titre",
+      "default": "L’alliance de la science botanique et du luxe naturel pour une peau visiblement rajeunie en 4 semaines."
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Texte indicatif du champ e-mail",
+      "default": "E-mail"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Libellé du bouton",
+      "default": "S’inscrire"
+    },
+    {
+      "type": "textarea",
+      "id": "fine_print",
+      "label": "Mention légale",
+      "default": "Formule brevetée, testée dermatologiquement, 97 % d’ingrédients d’origine naturelle."
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR Newsletter"
+    }
+  ]
+}
+{% endschema %}

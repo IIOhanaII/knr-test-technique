@@ -1,0 +1,76 @@
+{%- liquid
+  assign available = false
+  if product.selected_or_first_available_variant.available
+    assign available = true
+  endif
+-%}
+{%- if available -%}
+  <div
+    class="knr-product-hero__announcement"
+    data-knr-reinsurance-carousel
+    data-knr-reinsurance-duration="{{ block.settings.message_speed | times: 1000 }}"
+    {{ block.shopify_attributes }}
+  >
+    <p class="knr-product-hero__announcement-text" data-knr-reinsurance-text></p>
+    <div class="knr-product-hero__steps" data-knr-reinsurance-steps aria-hidden="true">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Reinsurance carousel",
+  "blocks": [
+    {
+      "type": "knr-reinsurance-message"
+    }
+  ],
+  "settings": [
+    {
+      "type": "range",
+      "id": "message_speed",
+      "label": "t:settings.scroll_speed",
+      "min": 2,
+      "max": 10,
+      "default": 4,
+      "unit": "sec"
+    },
+    {
+      "type": "paragraph",
+      "content": "Ajoutez un bloc « Reinsurance message » par message. Le token {delivery} insère la date de livraison calculée depuis le metafield produit knr.delivery_days. Le carrousel est masqué si le produit est indisponible."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Reinsurance carousel",
+      "blocks": [
+        {
+          "type": "knr-reinsurance-message",
+          "settings": {
+            "text": "En stock, livraison estimée {delivery}."
+          }
+        },
+        {
+          "type": "knr-reinsurance-message",
+          "settings": {
+            "text": "Livraison offerte dès 60 € d'achat."
+          }
+        },
+        {
+          "type": "knr-reinsurance-message",
+          "settings": {
+            "text": "Retours sous 30 jours."
+          }
+        },
+        {
+          "type": "knr-reinsurance-message",
+          "settings": {
+            "text": "Paiement sécurisé."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

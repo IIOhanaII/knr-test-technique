@@ -1,0 +1,454 @@
+{%- liquid
+  # Product-specific content from the knr.before_after metaobject.
+  # No fallback: renders only when the metaobject is set.
+  assign ba = product.metafields.knr.before_after.value
+-%}
+{%- if ba != blank -%}
+  {%- liquid
+    assign ba_before = ba.image_before.value
+    assign ba_after = ba.image_after.value
+    assign ba_ratio = ba_before.aspect_ratio | default: ba_after.aspect_ratio | default: 1.5
+  -%}
+  <section class="knr-before-after" data-section-id="{{ section.id }}">
+    {%- if ba.title.value != blank or ba.subtitle.value != blank -%}
+      <div class="knr-before-after__head">
+        {%- if ba.title.value != blank -%}
+          <h2 class="knr-before-after__title">{{ ba.title.value }}</h2>
+        {%- endif -%}
+        {%- if ba.subtitle.value != blank -%}
+          <p class="knr-before-after__subtitle">{{ ba.subtitle.value }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if ba_before != blank and ba_after != blank -%}
+      <div
+        class="knr-before-after__slider"
+        data-knr-ba
+        style="--knr-ba-ratio: {{ ba_ratio }}; --knr-ba-pos: 50%;"
+      >
+        <div class="knr-before-after__layer knr-before-after__layer--after">
+          {{
+            ba_after
+            | image_url: width: 1600
+            | image_tag:
+              loading: 'lazy',
+              width: ba_after.width,
+              height: ba_after.height,
+              widths: '375, 750, 1100, 1600',
+              sizes: '100vw',
+              class: 'knr-before-after__image',
+              alt: ba_after.alt | default: ba.title.value
+          }}
+          <span class="knr-before-after__label knr-before-after__label--after">
+            {{- section.settings.after_label -}}
+          </span>
+        </div>
+        <div class="knr-before-after__layer knr-before-after__layer--before" data-knr-ba-before>
+          {{
+            ba_before
+            | image_url: width: 1600
+            | image_tag:
+              loading: 'lazy',
+              width: ba_before.width,
+              height: ba_before.height,
+              widths: '375, 750, 1100, 1600',
+              sizes: '100vw',
+              class: 'knr-before-after__image',
+              alt: ba_before.alt | default: ba.title.value
+          }}
+          <span class="knr-before-after__label knr-before-after__label--before">
+            {{- section.settings.before_label -}}
+          </span>
+        </div>
+
+        <span class="knr-before-after__handle" data-knr-ba-handle aria-hidden="true">
+          {{- 'knr-icon-reveal.svg' | inline_asset_content -}}
+        </span>
+
+        <input
+          type="range"
+          class="knr-before-after__range"
+          min="0"
+          max="100"
+          value="50"
+          data-knr-ba-range
+          aria-label="{{ 'blocks.slider_label' | t | default: 'Before / after' }}"
+        >
+      </div>
+    {%- endif -%}
+
+    {%- # Reviews carousel — part of the Before/After section, fed by a mock JSON. -%}
+    <div
+      class="knr-before-after__reviews"
+      data-knr-reviews
+      data-knr-mock-url="{{ 'knr-product-data-mock.json' | asset_url }}"
+      hidden
+    >
+      <template data-knr-review-star>{{ 'knr-icon-star.svg' | inline_asset_content }}</template>
+
+      <div class="knr-reviews__track" data-knr-reviews-track></div>
+
+      <div class="knr-reviews__arrows">
+        <button
+          type="button"
+          class="knr-reviews__arrow"
+          data-knr-reviews-prev
+          aria-label="{{ 'content.pagination.previous' | t }}"
+        >
+          {{- 'icon-chevron-left.svg' | inline_asset_content -}}
+        </button>
+        <button
+          type="button"
+          class="knr-reviews__arrow"
+          data-knr-reviews-next
+          aria-label="{{ 'content.pagination.next' | t }}"
+        >
+          {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script
+    src="{{ 'knr-reviews.js' | asset_url }}"
+    type="module"
+    fetchpriority="low"
+  ></script>
+{%- endif -%}
+
+{% stylesheet %}
+  .knr-before-after {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-10);
+    padding: 4rem var(--knr-space-6) 2.5rem;
+    background: var(--knr-color-surface-1);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-before-after__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-4);
+    text-align: center;
+  }
+
+  .knr-before-after__title {
+    margin: 0;
+    font-weight: 400;
+    font-size: 2rem;
+    letter-spacing: -1.28px;
+    line-height: 40px;
+  }
+
+  .knr-before-after__subtitle {
+    margin: 0;
+    max-width: 600px;
+    font-size: 0.875rem;
+    letter-spacing: -0.28px;
+    line-height: 22px;
+  }
+
+  .knr-before-after__slider {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--knr-ba-ratio, 1.5);
+    overflow: hidden;
+    display: grid;
+    grid-template: 1fr / 1fr;
+    touch-action: pan-y;
+    user-select: none;
+  }
+
+  .knr-before-after__layer {
+    grid-area: 1 / 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* Isolate so each layer's label stays trapped in its own stacking
+       context and can't paint over the other layer. */
+    isolation: isolate;
+  }
+
+  .knr-before-after__layer--after {
+    z-index: 0;
+  }
+
+  .knr-before-after__layer--before {
+    z-index: 1;
+    clip-path: inset(0 calc(100% - var(--knr-ba-pos)) 0 0);
+  }
+
+  .knr-before-after__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-before-after__label {
+    position: absolute;
+    inset-block-start: 2.5rem;
+    z-index: 1;
+    font-size: 0.875rem;
+    letter-spacing: -0.28px;
+    line-height: 14px;
+    text-transform: uppercase;
+    color: var(--knr-color-black);
+  }
+
+  .knr-before-after__label--before {
+    inset-inline-start: 2.5rem;
+  }
+
+  .knr-before-after__label--after {
+    inset-inline-end: 2.5rem;
+  }
+
+  .knr-before-after__slider::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--knr-ba-pos);
+    width: 2px;
+    transform: translateX(-50%);
+    background: var(--knr-color-white);
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .knr-before-after__handle {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: var(--knr-ba-pos);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    background: var(--knr-color-white);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+  }
+
+  .knr-before-after__handle svg {
+    width: 10px;
+    height: auto;
+  }
+
+  .knr-before-after__range {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: ew-resize;
+    appearance: none;
+  }
+
+  .knr-before-after__range::-webkit-slider-thumb {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    cursor: ew-resize;
+    appearance: none;
+  }
+
+  .knr-before-after__range::-moz-range-thumb {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    cursor: ew-resize;
+  }
+
+  /* Reviews carousel nested inside the Before/After section. */
+  .knr-before-after__reviews {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-10);
+    width: 100%;
+    text-align: center;
+  }
+
+  .knr-before-after__reviews[hidden] {
+    display: none;
+  }
+
+  .knr-reviews__track {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .knr-reviews__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-10);
+  }
+
+  .knr-reviews__item[hidden] {
+    display: none;
+  }
+
+  .knr-reviews__rating {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-reviews__stars {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+    color: var(--knr-color-accent);
+  }
+
+  .knr-reviews__star {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+  }
+
+  .knr-reviews__star svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-reviews__star--off {
+    opacity: 0.25;
+  }
+
+  .knr-reviews__author {
+    color: var(--knr-color-accent);
+    font-size: 0.625rem;
+    letter-spacing: -0.4px;
+    line-height: 12px;
+  }
+
+  .knr-reviews__quote {
+    margin: 0;
+    font-size: var(--knr-text-xl);
+    letter-spacing: -0.48px;
+    line-height: 32px;
+  }
+
+  .knr-reviews__arrows {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-4);
+  }
+
+  .knr-reviews__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--knr-color-black);
+    cursor: pointer;
+  }
+
+  .knr-reviews__arrow[hidden] {
+    display: none;
+  }
+
+  .knr-reviews__arrow svg {
+    width: 12px;
+    height: auto;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-before-after {
+      padding: 5rem 2.5rem;
+    }
+
+    .knr-before-after__subtitle {
+      font-size: 1rem;
+    }
+
+    .knr-before-after__reviews {
+      /* Section gap is 40px; +40px here = 80px between slider and reviews. */
+      margin-block-start: var(--knr-space-10);
+    }
+
+    .knr-reviews__quote {
+      font-size: 2rem;
+      letter-spacing: -1.28px;
+      line-height: 40px;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    function setup(slider) {
+      var range = slider.querySelector('[data-knr-ba-range]');
+      if (!range) return;
+      function sync() {
+        slider.style.setProperty('--knr-ba-pos', range.value + '%');
+      }
+      range.addEventListener('input', sync);
+      range.addEventListener('pointerdown', sync);
+      sync();
+    }
+
+    function init() {
+      document.querySelectorAll('[data-knr-ba]').forEach(setup);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "KNR Before / After",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Contenu géré par produit via le metafield knr.before_after (métaobjet « KNR — Before/After » : titre + sous-titre + image avant + image après). La section ne s'affiche que si ce metafield est renseigné."
+    },
+    {
+      "type": "text",
+      "id": "before_label",
+      "label": "Libellé « avant »",
+      "default": "Before"
+    },
+    {
+      "type": "text",
+      "id": "after_label",
+      "label": "Libellé « après »",
+      "default": "After"
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR Before / After"
+    }
+  ]
+}
+{% endschema %}

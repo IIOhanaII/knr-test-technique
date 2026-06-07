@@ -1,0 +1,352 @@
+{%- liquid
+  assign news_blog = blogs[section.settings.blog]
+  assign post_limit = section.settings.post_limit
+-%}
+{%- if news_blog != blank and news_blog.articles_count > 0 -%}
+  <section class="knr-latest-news" data-section-id="{{ section.id }}">
+    <div class="knr-latest-news__header">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="knr-latest-news__heading">{{ section.settings.heading }}</h2>
+      {%- endif -%}
+      {%- if section.settings.show_view_all and section.settings.view_all_label != blank -%}
+        <a class="knr-latest-news__view-all knr-latest-news__view-all--desktop" href="{{ news_blog.url }}">
+          {{- section.settings.view_all_label -}}
+        </a>
+      {%- endif -%}
+    </div>
+
+    <ul class="knr-latest-news__list" role="list" data-knr-news-list>
+      {%- for article in news_blog.articles limit: post_limit -%}
+        {%- liquid
+          assign article_image = article.image
+          assign eyebrow = article.tags.first | default: news_blog.title
+          if article.excerpt != blank
+            assign excerpt = article.excerpt | strip_html
+          else
+            assign excerpt = article.content | strip_html | truncatewords: 24
+          endif
+        -%}
+        <li class="knr-latest-news__card">
+          <a class="knr-latest-news__media" href="{{ article.url }}">
+            {%- if article_image != blank -%}
+              {{
+                article_image
+                | image_url: width: 480
+                | image_tag:
+                  loading: 'lazy',
+                  width: article_image.width,
+                  height: article_image.height,
+                  widths: '280, 480, 560, 960',
+                  sizes: '(min-width: 750px) 33vw, 280px',
+                  class: 'knr-latest-news__image',
+                  alt: article.title | escape
+              }}
+            {%- endif -%}
+          </a>
+
+          <div class="knr-latest-news__details">
+            <div class="knr-latest-news__eyebrow-group">
+              {%- if eyebrow != blank -%}
+                <p class="knr-latest-news__eyebrow">{{ eyebrow }}</p>
+              {%- endif -%}
+              <span class="knr-latest-news__divider" aria-hidden="true"></span>
+            </div>
+            <a class="knr-latest-news__title" href="{{ article.url }}">{{ article.title }}</a>
+            {%- if excerpt != blank -%}
+              <p class="knr-latest-news__text">{{ excerpt }}</p>
+            {%- endif -%}
+          </div>
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    <div class="knr-latest-news__progress" data-knr-news-progress aria-hidden="true">
+      <span class="knr-latest-news__progress-thumb" data-knr-news-progress-thumb></span>
+    </div>
+
+    {%- if section.settings.show_view_all and section.settings.view_all_label != blank -%}
+      <a class="knr-latest-news__view-all knr-latest-news__view-all--mobile" href="{{ news_blog.url }}">
+        {{- section.settings.view_all_label -}}
+      </a>
+    {%- endif -%}
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .knr-latest-news {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--knr-space-10);
+    padding-block: var(--knr-space-10) 4rem;
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-latest-news__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--knr-space-4);
+    padding-inline: var(--knr-space-6);
+  }
+
+  .knr-latest-news__heading {
+    margin: 0;
+    font-weight: 400;
+    font-size: 2rem;
+    letter-spacing: -1.28px;
+    line-height: 40px;
+  }
+
+  .knr-latest-news__view-all {
+    flex: none;
+    color: inherit;
+    text-decoration: none;
+    border-block-end: 0.8px solid var(--knr-color-black);
+    padding-block-end: 2px;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+    white-space: nowrap;
+  }
+
+  /* Mobile: shown below the progress bar; desktop link stays in the header. */
+  .knr-latest-news__view-all--desktop {
+    display: none;
+  }
+
+  .knr-latest-news__view-all--mobile {
+    align-self: center;
+  }
+
+  .knr-latest-news__list {
+    display: flex;
+    gap: var(--knr-space-2);
+    margin: 0;
+    padding: 0 0 0 var(--knr-space-6);
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* Keep the 24px left gutter visible despite mandatory snap. */
+    scroll-padding-inline-start: var(--knr-space-6);
+    scrollbar-width: none;
+  }
+
+  .knr-latest-news__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .knr-latest-news__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-4);
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+  }
+
+  .knr-latest-news__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--knr-color-surface-2);
+    overflow: hidden;
+  }
+
+  .knr-latest-news__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-latest-news__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-4);
+    padding-inline-end: 15px;
+  }
+
+  .knr-latest-news__eyebrow-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-latest-news__eyebrow {
+    margin: 0;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+  }
+
+  .knr-latest-news__divider {
+    width: 16px;
+    height: 0.8px;
+    background: var(--knr-color-accent);
+  }
+
+  .knr-latest-news__title {
+    margin: 0;
+    color: inherit;
+    text-decoration: none;
+    font-size: var(--knr-text-xl);
+    letter-spacing: -0.48px;
+    line-height: 32px;
+  }
+
+  .knr-latest-news__text {
+    margin: 0;
+    font-size: 0.875rem;
+    letter-spacing: -0.28px;
+    line-height: 22px;
+  }
+
+  .knr-latest-news__progress {
+    position: relative;
+    align-self: center;
+    width: 64px;
+    height: 1px;
+    background: var(--knr-color-surface-3);
+  }
+
+  .knr-latest-news__progress-thumb {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 33%;
+    background: var(--knr-color-black);
+    will-change: transform;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-latest-news {
+      padding-block: var(--knr-space-16);
+    }
+
+    .knr-latest-news__header {
+      padding-inline: 2.5rem;
+    }
+
+    .knr-latest-news__list {
+      padding-inline: 2.5rem;
+      overflow-x: visible;
+      scroll-snap-type: none;
+    }
+
+    .knr-latest-news__card {
+      flex: 1 0 0;
+      min-width: 0;
+    }
+
+    .knr-latest-news__media {
+      aspect-ratio: auto;
+      height: 334px;
+    }
+
+    .knr-latest-news__progress {
+      display: none;
+    }
+
+    .knr-latest-news__view-all--desktop {
+      display: inline-block;
+    }
+
+    .knr-latest-news__view-all--mobile {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    function setup(section) {
+      var list = section.querySelector('[data-knr-news-list]');
+      var track = section.querySelector('[data-knr-news-progress]');
+      var thumb = section.querySelector('[data-knr-news-progress-thumb]');
+      if (!list || !track || !thumb) return;
+
+      function update() {
+        var max = list.scrollWidth - list.clientWidth;
+        if (max <= 1) {
+          track.style.visibility = 'hidden';
+          return;
+        }
+        track.style.visibility = '';
+        var trackW = track.clientWidth;
+        var thumbW = Math.max(trackW * (list.clientWidth / list.scrollWidth), 8);
+        var progress = list.scrollLeft / max;
+        thumb.style.width = thumbW + 'px';
+        thumb.style.transform = 'translateX(' + progress * (trackW - thumbW) + 'px)';
+      }
+
+      list.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    }
+
+    function init() {
+      document.querySelectorAll('.knr-latest-news').forEach(setup);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "KNR Latest news",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Articles tirés d'un blog Shopify natif. Choisissez le blog ci-dessous : la section affiche ses derniers articles (image, premier tag en sur-titre, titre, extrait). Si aucun blog n'est sélectionné ou qu'il est vide, la section n'apparaît pas."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Titre",
+      "default": "Latest news"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "range",
+      "id": "post_limit",
+      "label": "Nombre d'articles",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Afficher le lien « Voir tous les articles »",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "view_all_label",
+      "label": "Libellé du lien",
+      "default": "Voir tous les articles"
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR Latest news"
+    }
+  ]
+}
+{% endschema %}

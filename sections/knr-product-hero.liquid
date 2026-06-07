@@ -1,0 +1,1414 @@
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign can_add_to_cart = false
+  if current_variant.available
+    assign can_add_to_cart = true
+  endif
+  assign product_form_id = 'knr-ProductForm-' | append: section.id
+
+  assign benefits = product.metafields.knr.benefits.value
+
+  assign first_collection = product.collections.first
+  assign breadcrumb_type = product.type
+  assign breadcrumb_collection_title = first_collection.title
+  assign breadcrumb_collection_url = first_collection.url
+  assign has_dynamic_breadcrumb = false
+  if breadcrumb_type != blank or breadcrumb_collection_title != blank
+    assign has_dynamic_breadcrumb = true
+  endif
+
+  assign accordion_items = product.metafields.knr.accordions.value
+  assign complementary_products = product.metafields.knr.complementary_products.value
+-%}
+
+<script
+  src="{{ 'product-form.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+<script
+  src="{{ 'knr-product-hero.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<section
+  class="knr-product-hero"
+  data-section-id="{{ section.id }}"
+  data-product-handle="{{ product.handle }}"
+  data-knr-money-format="{{ shop.money_format | escape }}"
+  data-knr-currency="{{ shop.currency }}"
+  data-knr-mock-url="{{ 'knr-product-data-mock.json' | asset_url }}"
+  data-knr-labels='{"add":{{ 'products.product.add_to_cart' | t | json }},"sold_out":{{ 'products.product.sold_out' | t | json }},"unavailable":{{ 'products.product.unavailable' | t | json }}}'
+>
+  <div class="knr-product-hero__media">
+    <ul class="knr-product-hero__gallery" role="list" data-knr-gallery>
+      {%- for media in product.media -%}
+        {%- if media.media_type == 'image' -%}
+          <li
+            class="knr-product-hero__gallery-slide"
+            data-knr-zoom-src="{{ media | image_url: width: 2400 }}"
+          >
+            {{
+              media
+              | image_url: width: 1440
+              | image_tag:
+                loading: 'eager',
+                fetchpriority: 'high',
+                width: media.width,
+                height: media.height,
+                widths: '390, 720, 1080, 1440, 2160',
+                sizes: '(min-width: 750px) 33vw, 100vw',
+                class: 'knr-product-hero__media-image',
+                alt: media.alt | default: product.title
+            }}
+            {%- if forloop.index > 1 -%}
+              <button
+                type="button"
+                class="knr-product-hero__gallery-zoom"
+                data-knr-gallery-zoom
+                data-knr-zoom-index="{{ forloop.index0 }}"
+                aria-label="{{ 'actions.zoom' | t }}"
+              >
+                {{- 'knr-icon-expand.svg' | inline_asset_content -}}
+              </button>
+            {%- endif -%}
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+
+    {%- if product.media.size > 1 -%}
+      <button
+        type="button"
+        class="knr-product-hero__gallery-arrow knr-product-hero__gallery-arrow--prev"
+        data-knr-gallery-prev
+        aria-label="{{ 'content.pagination.previous' | t }}"
+        hidden
+      >
+        {{- 'icon-chevron-left.svg' | inline_asset_content -}}
+      </button>
+      <button
+        type="button"
+        class="knr-product-hero__gallery-arrow knr-product-hero__gallery-arrow--next"
+        data-knr-gallery-next
+        aria-label="{{ 'content.pagination.next' | t }}"
+      >
+        {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+      </button>
+    {%- endif -%}
+
+    {%- if section.settings.show_benefits and benefits != blank and benefits.size > 0 -%}
+      <div class="knr-product-hero__benefits knr-product-hero__benefits--mobile">
+        {%- for benefit in benefits -%}
+          <span class="knr-product-hero__benefit">{{ benefit }}</span>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    {%- if product.media.size > 1 -%}
+      <div class="knr-product-hero__gallery-progress" data-knr-gallery-progress aria-hidden="true">
+        <span class="knr-product-hero__gallery-progress-thumb" data-knr-gallery-progress-thumb></span>
+      </div>
+    {%- endif -%}
+  </div>
+
+  <dialog class="knr-product-hero__lightbox" data-knr-lightbox aria-label="{{ 'actions.zoom' | t }}">
+    <button
+      type="button"
+      class="knr-product-hero__lightbox-close"
+      data-knr-lightbox-close
+      aria-label="{{ 'accessibility.close_dialog' | t }}"
+    >
+      {{- 'icon-close.svg' | inline_asset_content -}}
+    </button>
+    {% # theme-check-disable ImgWidthAndHeight %}
+    <img class="knr-product-hero__lightbox-image" data-knr-lightbox-image alt="">
+    {% # theme-check-enable ImgWidthAndHeight %}
+  </dialog>
+
+  <div class="knr-product-hero__details">
+    {%- if has_dynamic_breadcrumb -%}
+      <p class="knr-product-hero__breadcrumb">
+        {%- if breadcrumb_type != blank -%}{{ breadcrumb_type }}{%- endif -%}
+        {%- if breadcrumb_type != blank and breadcrumb_collection_title != blank %} / {% endif -%}
+        {%- if breadcrumb_collection_title != blank -%}
+          <a class="knr-product-hero__breadcrumb-link" href="{{ breadcrumb_collection_url }}">{{ breadcrumb_collection_title }}</a>
+        {%- endif -%}
+      </p>
+    {%- endif -%}
+
+    {%- if section.settings.show_benefits and benefits != blank and benefits.size > 0 -%}
+      <div class="knr-product-hero__benefits knr-product-hero__benefits--desktop">
+        {%- for benefit in benefits -%}
+          <span class="knr-product-hero__benefit knr-product-hero__benefit--outline">{{ benefit }}</span>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    <h1 class="knr-product-hero__title">{{ product.title }}</h1>
+
+    {%- if section.settings.show_reviews -%}
+      <div class="knr-product-hero__rating" data-knr-rating hidden></div>
+      <template data-knr-star-template>{{ 'knr-icon-star.svg' | inline_asset_content }}</template>
+    {%- endif -%}
+
+    <div class="knr-product-hero__price-block">
+      <div class="knr-product-hero__price-row">
+        <span class="knr-product-hero__price" data-knr-price>
+          {{- current_variant.price | money -}}
+        </span>
+        {%- if current_variant.compare_at_price > current_variant.price -%}
+          <s class="knr-product-hero__compare-price" data-knr-compare-price>
+            {{- current_variant.compare_at_price | money -}}
+          </s>
+        {%- endif -%}
+      </div>
+      <small
+        class="knr-product-hero__unit-price"
+        data-knr-unit-price
+        {% unless current_variant.unit_price_measurement %}hidden{% endunless %}
+      >
+        {%- if current_variant.unit_price_measurement -%}
+          {{- current_variant.unit_price | unit_price_with_measurement: current_variant.unit_price_measurement -}}
+        {%- endif -%}
+      </small>
+    </div>
+
+    {%- if section.settings.show_scores -%}
+      <div class="knr-product-hero__scores" data-knr-scores hidden></div>
+    {%- endif -%}
+
+    {%- if product.description != blank -%}
+      <div class="knr-product-hero__short-description">
+        {{- product.description -}}
+      </div>
+    {%- endif -%}
+
+    {%- unless product.has_only_default_variant -%}
+      <div class="knr-product-hero__variants">
+        {%- for option in product.options_with_values -%}
+          <fieldset class="knr-product-hero__option">
+            <legend class="knr-product-hero__option-label">{{ option.name }}</legend>
+            <div
+              class="knr-product-hero__option-values"
+              role="radiogroup"
+              aria-label="{{ option.name }}"
+            >
+              {%- for value in option.values -%}
+                {%- assign selected = false -%}
+                {%- if option.selected_value == value -%}
+                  {%- assign selected = true -%}
+                {%- endif -%}
+                <button
+                  type="button"
+                  class="knr-product-hero__option-value{% if selected %} knr-product-hero__option-value--selected{% endif %}"
+                  data-knr-option-index="{{ option.position }}"
+                  data-knr-option-value="{{ value | escape }}"
+                  role="radio"
+                  aria-checked="{{ selected }}"
+                >
+                  {{- value -}}
+                </button>
+              {%- endfor -%}
+            </div>
+          </fieldset>
+        {%- endfor -%}
+      </div>
+    {%- endunless -%}
+
+    <product-form-component
+      class="knr-product-hero__form-wrapper"
+      data-section-id="{{ section.id }}"
+      data-product-id="{{ product.id }}"
+      data-product-url="{{ product.url }}"
+      on:submit="/handleSubmit"
+    >
+      <div class="visually-hidden" aria-live="assertive" role="status" aria-atomic="true" ref="liveRegion"></div>
+      {%- form 'product', product, id: product_form_id, data-type: 'add-to-cart-form' -%}
+        <input
+          ref="variantId"
+          type="hidden"
+          name="id"
+          value="{{ current_variant.id }}"
+          data-knr-variant-id
+        >
+        <add-to-cart-component class="knr-product-hero__atc-wrapper">
+          <button
+            ref="addToCartButton"
+            type="submit"
+            name="add"
+            class="knr-product-hero__atc"
+            data-knr-atc
+            on:click="/handleClick"
+            {% unless can_add_to_cart %}
+              disabled
+            {% endunless %}
+          >
+            <span data-knr-atc-label>
+              {%- if can_add_to_cart -%}
+                {{ 'products.product.add_to_cart' | t }}
+              {%- elsif current_variant -%}
+                {{ 'products.product.sold_out' | t }}
+              {%- else -%}
+                {{ 'products.product.unavailable' | t }}
+              {%- endif -%}
+            </span>
+          </button>
+        </add-to-cart-component>
+      {%- endform -%}
+    </product-form-component>
+
+    {% content_for 'blocks' %}
+
+    {%- if section.settings.show_accordions and accordion_items != blank and accordion_items.size > 0 -%}
+      <div class="knr-product-hero__accordions">
+        {%- for item in accordion_items -%}
+          <details
+            class="knr-product-hero__accordion"
+            {% if item.open_by_default %}open{% endif %}
+          >
+            <summary class="knr-product-hero__accordion-header">
+              <span>{{ item.title }}</span>
+              <span class="knr-product-hero__accordion-icon" aria-hidden="true">
+                {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+              </span>
+            </summary>
+            <div class="knr-product-hero__accordion-body">
+              {%- render 'knr-richtext', value: item.content.value -%}
+            </div>
+          </details>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    {%- if section.settings.show_complementary and complementary_products != blank and complementary_products.size > 0 -%}
+      <div class="knr-product-hero__complementary">
+        <div class="knr-product-hero__complementary-header">
+          <h3 class="knr-product-hero__complementary-title">
+            {{- section.settings.complementary_title -}}
+          </h3>
+          <span class="knr-product-hero__complementary-chevron" aria-hidden="true">
+            {{- 'icon-chevron-right.svg' | inline_asset_content -}}
+          </span>
+        </div>
+        <ul class="knr-product-hero__complementary-list" role="list">
+          {%- for prod in complementary_products -%}
+            {%- liquid
+              assign prod_variant = prod.selected_or_first_available_variant
+              assign prod_form_id = 'knr-complementary-' | append: section.id | append: '-' | append: prod.id
+            -%}
+            <li class="knr-product-hero__complementary-item">
+              <div class="knr-product-hero__complementary-image-wrap">
+                <a
+                  class="knr-product-hero__complementary-media"
+                  href="{{ prod.url }}"
+                  aria-label="{{ prod.title }}"
+                >
+                  {%- if prod.featured_image -%}
+                    {{
+                      prod.featured_image
+                      | image_url: width: 320
+                      | image_tag:
+                        loading: 'lazy',
+                        width: 160,
+                        height: 209,
+                        widths: '160, 320',
+                        sizes: '160px',
+                        class: 'knr-product-hero__complementary-image',
+                        alt: prod.title
+                    }}
+                  {%- endif -%}
+                </a>
+                <product-form-component
+                  class="knr-product-hero__complementary-form"
+                  data-section-id="{{ section.id }}"
+                  data-product-id="{{ prod.id }}"
+                  on:submit="/handleSubmit"
+                >
+                  <div
+                    class="visually-hidden"
+                    aria-live="assertive"
+                    role="status"
+                    aria-atomic="true"
+                    ref="liveRegion"
+                  ></div>
+                  {%- form 'product', prod, id: prod_form_id, novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+                    <input
+                      type="hidden"
+                      name="id"
+                      ref="variantId"
+                      value="{{ prod_variant.id }}"
+                      {% unless prod_variant.available %}disabled{% endunless %}
+                    >
+                    <input type="hidden" name="quantity" value="1">
+                    <add-to-cart-component>
+                      <button
+                        ref="addToCartButton"
+                        type="submit"
+                        name="add"
+                        class="knr-product-hero__complementary-add"
+                        aria-label="{{ 'actions.add' | t }} — {{ prod.title }}"
+                        {% unless prod_variant.available %}disabled{% endunless %}
+                      >
+                        {{- 'knr-icon-expand.svg' | inline_asset_content -}}
+                      </button>
+                    </add-to-cart-component>
+                  {%- endform -%}
+                </product-form-component>
+              </div>
+              <a class="knr-product-hero__complementary-info" href="{{ prod.url }}">
+                <span class="knr-product-hero__complementary-name">{{ prod.title }}</span>
+                <span class="knr-product-hero__complementary-price">{{ prod.price | money }}</span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    <script type="application/json" data-knr-variants>
+      {{ product.variants | json }}
+    </script>
+  </div>
+</section>
+
+{% stylesheet %}
+  .knr-product-hero {
+    --knr-hero-media-height: 550px;
+    --knr-hero-overlap: 120px;
+    --knr-hero-card-padding: var(--knr-space-4);
+    --knr-hero-atc-height: 48px;
+    --knr-hero-atc-radius: 2px;
+    --knr-hero-option-underline-width: 0.8px;
+    --knr-hero-step-width: 16px;
+    --knr-hero-arrow-size: 16px;
+
+    display: flex;
+    flex-direction: column;
+    background: var(--knr-color-bg);
+    font-family: var(--knr-font-sans);
+    color: var(--knr-color-text);
+  }
+
+  .knr-product-hero__media {
+    position: relative;
+    width: 100%;
+    height: var(--knr-hero-media-height);
+    overflow: hidden;
+  }
+
+  .knr-product-hero__gallery-arrow {
+    position: absolute;
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--knr-hero-arrow-size);
+    height: var(--knr-hero-arrow-size);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--knr-color-text);
+    cursor: pointer;
+    z-index: 3;
+  }
+
+  .knr-product-hero__gallery-arrow svg {
+    width: 16px;
+    height: auto;
+  }
+
+  .knr-product-hero__gallery-arrow--prev {
+    inset-inline-start: var(--knr-space-2);
+  }
+
+  .knr-product-hero__gallery-arrow--next {
+    inset-inline-end: var(--knr-space-2);
+  }
+
+  .knr-product-hero__gallery-arrow[hidden] {
+    display: none;
+  }
+
+  .knr-product-hero__gallery-zoom {
+    display: none;
+  }
+
+  /* Mobile swipe progress bar for the image gallery, sitting just above the
+     overlapping details card. */
+  .knr-product-hero__gallery-progress {
+    position: absolute;
+    inset-block-end: calc(var(--knr-hero-overlap) + var(--knr-space-4));
+    inset-inline: 0;
+    width: 64px;
+    height: 1px;
+    margin-inline: auto;
+    background: var(--knr-color-surface-3);
+    z-index: 3;
+  }
+
+  .knr-product-hero__gallery-progress-thumb {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 33%;
+    background: var(--knr-color-black);
+    will-change: transform;
+  }
+
+  .knr-product-hero__benefits {
+    display: flex;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-product-hero__benefits--mobile {
+    position: absolute;
+    inset-block-start: var(--knr-space-16);
+    inset-inline: 0;
+    justify-content: center;
+    padding: var(--knr-space-4);
+    z-index: 2;
+  }
+
+  .knr-product-hero__benefits--desktop {
+    display: none;
+  }
+
+  .knr-product-hero__benefit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px var(--knr-space-1) var(--knr-space-1);
+    background: var(--knr-color-white);
+    border-radius: 2px;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .knr-product-hero__benefit--outline {
+    border: 0.5px solid var(--knr-color-black);
+    background: transparent;
+  }
+
+  .knr-product-hero__breadcrumb {
+    grid-area: breadcrumb;
+    margin: 0;
+    color: var(--knr-color-accent);
+    font-size: 0.625rem;
+    letter-spacing: -0.2px;
+  }
+
+  .knr-product-hero__breadcrumb-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .knr-product-hero__breadcrumb-link:hover {
+    text-decoration: underline;
+  }
+
+  .knr-product-hero__gallery {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .knr-product-hero__gallery::-webkit-scrollbar {
+    display: none;
+  }
+
+  .knr-product-hero__gallery-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-product-hero__media-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-product-hero__details {
+    position: relative;
+    margin-top: calc(var(--knr-hero-overlap) * -1);
+    margin-inline: var(--knr-space-4);
+    margin-bottom: var(--knr-space-6);
+    padding: var(--knr-space-6) var(--knr-space-4) var(--knr-space-8);
+    background: var(--knr-color-white);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: var(--knr-space-4);
+    row-gap: var(--knr-space-4);
+    grid-template-areas:
+      'title price'
+      'rating rating'
+      'scores scores'
+      'description description'
+      'variants variants'
+      'atc atc'
+      'announcement announcement'
+      'accordions accordions'
+      'complementary complementary';
+  }
+
+  .knr-product-hero__breadcrumb {
+    display: none;
+  }
+
+  .knr-product-hero__title {
+    grid-area: title;
+    margin: 0;
+    font-size: var(--knr-text-base);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.32px;
+    text-transform: uppercase;
+  }
+
+  .knr-product-hero__price-block {
+    grid-area: price;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-product-hero__price-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-product-hero__price {
+    font-size: var(--knr-text-base);
+    letter-spacing: -0.28px;
+  }
+
+  .knr-product-hero__compare-price {
+    font-size: var(--knr-text-xs);
+    color: var(--knr-color-text);
+    letter-spacing: -0.2px;
+  }
+
+  .knr-product-hero__unit-price {
+    color: var(--knr-color-accent);
+    font-size: 0.5rem;
+    letter-spacing: -0.16px;
+  }
+
+  .knr-product-hero__unit-price[hidden] {
+    display: none;
+  }
+
+  .knr-product-hero__rating {
+    grid-area: rating;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-product-hero__rating-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-product-hero__stars {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+    color: var(--knr-color-accent);
+  }
+
+  .knr-product-hero__star {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+  }
+
+  .knr-product-hero__star svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-product-hero__star--off {
+    opacity: 0.25;
+  }
+
+  .knr-product-hero__rating-value,
+  .knr-product-hero__rating-count {
+    color: var(--knr-color-accent);
+    font-size: 0.625rem;
+    letter-spacing: -0.2px;
+  }
+
+  .knr-product-hero__rating-dot {
+    width: 2px;
+    height: 2px;
+    background: var(--knr-color-accent);
+  }
+
+  .knr-product-hero__scores {
+    grid-area: scores;
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+  }
+
+  .knr-product-hero__score-dot {
+    width: 2px;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .knr-product-hero__short-description {
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 1.66;
+  }
+
+  .knr-product-hero__short-description p {
+    margin: 0;
+  }
+
+  .knr-product-hero__short-description {
+    grid-area: description;
+  }
+
+  .knr-product-hero__variants {
+    grid-area: variants;
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2);
+    padding-top: var(--knr-space-2);
+  }
+
+  .knr-product-hero__option {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-product-hero__option-label {
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+  }
+
+  .knr-product-hero__option-values {
+    display: flex;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-product-hero__option-value {
+    flex: 1 0 0;
+    padding-block: var(--knr-space-2);
+    padding-inline: 0;
+    background: transparent;
+    border: 0;
+    border-block-end: var(--knr-hero-option-underline-width) solid transparent;
+    color: inherit;
+    font: inherit;
+    font-size: var(--knr-text-sm);
+    line-height: 1.66;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .knr-product-hero__option-value:hover {
+    border-block-end-color: rgb(0 0 0 / 0.3);
+  }
+
+  .knr-product-hero__option-value--selected {
+    border-block-end-color: currentColor;
+  }
+
+  .knr-product-hero__form-wrapper {
+    grid-area: atc;
+    padding-top: var(--knr-space-2);
+  }
+
+  .knr-product-hero__atc {
+    width: 100%;
+    height: var(--knr-hero-atc-height);
+    padding-inline: var(--knr-space-6);
+    background: var(--knr-color-black);
+    color: var(--knr-color-white);
+    border: 0;
+    border-radius: var(--knr-hero-atc-radius);
+    font: inherit;
+    font-size: 0.8125rem;
+    letter-spacing: -0.26px;
+    cursor: pointer;
+  }
+
+  .knr-product-hero__atc[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* The reinsurance carousel is a theme block; Shopify wraps it in a
+     .shopify-block element. Collapse that wrapper so the inner
+     .knr-product-hero__announcement becomes the grid item again. */
+  .knr-product-hero__details > .shopify-block {
+    display: contents;
+  }
+
+  .knr-product-hero__announcement {
+    grid-area: announcement;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-4);
+  }
+
+  .knr-product-hero__announcement-text {
+    margin: 0;
+    font-size: 0.625rem;
+    text-align: center;
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+  }
+
+  .knr-product-hero__steps {
+    display: flex;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-product-hero__step {
+    position: relative;
+    display: block;
+    width: var(--knr-hero-step-width);
+    height: 1px;
+    padding: 0;
+    background: var(--knr-color-surface-3);
+    border: 0;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .knr-product-hero__step-fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 0;
+    background: var(--knr-color-black);
+  }
+
+  .knr-product-hero__step--active .knr-product-hero__step-fill {
+    width: 100%;
+    transition: width var(--knr-stock-duration, 4000ms) linear;
+  }
+
+  .knr-product-hero__step--done .knr-product-hero__step-fill {
+    width: 100%;
+  }
+
+  .knr-product-hero__accordions {
+    grid-area: accordions;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .knr-product-hero__accordion {
+    border-block-start: 0.8px solid var(--knr-color-border);
+    padding-block: var(--knr-space-5);
+  }
+
+  .knr-product-hero__accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    list-style: none;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+  }
+
+  .knr-product-hero__accordion-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .knr-product-hero__accordion-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 8px;
+    height: 8px;
+    transform: rotate(90deg);
+    transition: transform 0.2s ease;
+  }
+
+  .knr-product-hero__accordion[open] .knr-product-hero__accordion-icon {
+    transform: rotate(-90deg);
+  }
+
+  .knr-product-hero__accordion-body {
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 1.66;
+  }
+
+  .knr-product-hero__accordion-body p {
+    margin: 0;
+  }
+
+  .knr-product-hero__accordion-body p + p {
+    margin-top: var(--knr-space-2);
+  }
+
+  .knr-product-hero__complementary {
+    grid-area: complementary;
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-6);
+    padding-block-start: var(--knr-space-4);
+  }
+
+  .knr-product-hero__complementary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-product-hero__complementary-title {
+    margin: 0;
+    font-family: var(--knr-font-sans);
+    font-size: var(--knr-text-sm);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.24px;
+    text-transform: uppercase;
+  }
+
+  .knr-product-hero__complementary-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+  }
+
+  .knr-product-hero__complementary-chevron svg {
+    width: 8px;
+    height: auto;
+  }
+
+  .knr-product-hero__complementary-list {
+    display: flex;
+    gap: var(--knr-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .knr-product-hero__complementary-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .knr-product-hero__complementary-item {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+  }
+
+  .knr-product-hero__complementary-image-wrap {
+    position: relative;
+    aspect-ratio: 159 / 208;
+    background: var(--knr-color-surface-2);
+    overflow: hidden;
+  }
+
+  .knr-product-hero__complementary-media {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-product-hero__complementary-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .knr-product-hero__complementary-form {
+    display: block;
+  }
+
+  .knr-product-hero__complementary-add {
+    position: absolute;
+    inset-block-end: var(--knr-space-2);
+    inset-inline-start: var(--knr-space-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    cursor: pointer;
+  }
+
+  .knr-product-hero__complementary-add svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .knr-product-hero__complementary-add:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .knr-product-hero__complementary-info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--knr-space-2);
+    margin-block-start: var(--knr-space-2);
+    padding-inline: var(--knr-space-1);
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.625rem;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
+  }
+
+  .knr-product-hero__complementary-price {
+    font-family: var(--knr-font-display);
+  }
+
+  .knr-product-hero__lightbox {
+    margin: auto;
+    padding: 0;
+    background: var(--knr-color-black);
+    border: 0;
+    inline-size: min(100vw, 100%);
+    block-size: min(100vh, 100%);
+    max-inline-size: none;
+    max-block-size: none;
+  }
+
+  .knr-product-hero__lightbox::backdrop {
+    background: rgb(0 0 0 / 0.85);
+  }
+
+  .knr-product-hero__lightbox[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .knr-product-hero__lightbox-image {
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .knr-product-hero__lightbox-close {
+    position: absolute;
+    inset-block-start: var(--knr-space-4);
+    inset-inline-end: var(--knr-space-4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--knr-space-10);
+    height: var(--knr-space-10);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--knr-color-white);
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-product-hero {
+      --knr-hero-overlap: 0;
+      --knr-hero-card-top: 128px;
+      --knr-hero-card-right: 40px;
+      --knr-hero-card-width: 456px;
+      --knr-hero-card-padding: 40px;
+
+      position: relative;
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        calc(var(--knr-hero-card-width) + var(--knr-hero-card-right));
+      align-items: start;
+      background: var(--knr-color-white);
+    }
+
+    .knr-product-hero__media {
+      grid-column: 1 / -1;
+      grid-row: 1 / 2;
+      width: 100%;
+      height: auto;
+      aspect-ratio: auto;
+      overflow: visible;
+    }
+
+    /* Paint slides white so sub-pixel seams between stacked images never
+       reveal a darker page background as a thin line. */
+    .knr-product-hero__gallery-slide {
+      background: var(--knr-color-white);
+    }
+
+    .knr-product-hero__gallery {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        calc(var(--knr-hero-card-width) + var(--knr-hero-card-right));
+      grid-template-areas:
+        'primary primary primary'
+        'thumb1 thumb2 spacer';
+      gap: var(--knr-space-2);
+      overflow: visible;
+      height: auto;
+      scroll-snap-type: none;
+    }
+
+    .knr-product-hero__gallery-slide {
+      width: auto;
+      height: auto;
+      flex: initial;
+      scroll-snap-align: none;
+      position: relative;
+    }
+
+    .knr-product-hero__gallery-slide:nth-child(1) {
+      grid-area: primary;
+      aspect-ratio: 1440 / 760;
+    }
+
+    .knr-product-hero__gallery-slide:nth-child(2) {
+      grid-area: thumb1;
+      aspect-ratio: 468 / 617;
+    }
+
+    .knr-product-hero__gallery-slide:nth-child(3) {
+      grid-area: thumb2;
+      aspect-ratio: 468 / 617;
+    }
+
+    .knr-product-hero__gallery-slide:nth-child(n + 4) {
+      display: none;
+    }
+
+    .knr-product-hero__gallery-arrow {
+      display: none;
+    }
+
+    .knr-product-hero__gallery-progress {
+      display: none;
+    }
+
+    .knr-product-hero__gallery-zoom {
+      position: absolute;
+      inset-block-end: var(--knr-space-6);
+      inset-inline-end: var(--knr-space-6);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--knr-space-6);
+      height: var(--knr-space-6);
+      padding: 0;
+      background: transparent;
+      border: 0;
+      color: var(--knr-color-white);
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .knr-product-hero__gallery-zoom svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .knr-product-hero__details {
+      grid-column: 3 / 4;
+      grid-row: 1 / 2;
+      z-index: 2;
+      align-self: start;
+      /* Card width + 8px and a -8px left margin so it pulls left over the
+         gallery gutter and sits flush against the second secondary photo
+         (no visible margin between them), while keeping the right gutter
+         at --knr-hero-card-right. Auto margins can't go negative, hence the
+         explicit value. */
+      width: calc(var(--knr-hero-card-width) + var(--knr-space-2));
+      margin-block-start: var(--knr-hero-card-top);
+      margin-block-end: 0;
+      margin-inline-start: calc(var(--knr-space-2) * -1);
+      margin-inline-end: var(--knr-hero-card-right);
+      padding: var(--knr-hero-card-padding);
+      background: var(--knr-color-white);
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        'breadcrumb breadcrumb'
+        'benefits benefits'
+        'title rating'
+        'scores scores'
+        'description description'
+        'variants variants'
+        'price price'
+        'atc atc'
+        'announcement announcement'
+        'accordions accordions'
+      'complementary complementary';
+      /* Gaps are controlled per-row via margin-block-start below so the
+         design's varying spacing (16px / 24px / 40px) can be honored. */
+      row-gap: 0;
+    }
+
+    /* Per-row vertical rhythm (desktop card) */
+    .knr-product-hero__benefits--desktop {
+      margin-block-start: 40px;
+    }
+
+    .knr-product-hero__title,
+    .knr-product-hero__rating {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__scores {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__short-description {
+      margin-block-start: var(--knr-space-4);
+    }
+
+    .knr-product-hero__variants {
+      margin-block-start: 40px;
+      padding-top: 0;
+    }
+
+    .knr-product-hero__price-block {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__form-wrapper {
+      margin-block-start: 40px;
+      padding-top: 0;
+    }
+
+    .knr-product-hero__announcement {
+      margin-block-start: var(--knr-space-4);
+    }
+
+    .knr-product-hero__accordions {
+      margin-block-start: 40px;
+    }
+
+    .knr-product-hero__complementary {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__breadcrumb {
+      display: block;
+    }
+
+    .knr-product-hero__benefits--mobile {
+      display: none;
+    }
+
+    .knr-product-hero__benefits--desktop {
+      grid-area: benefits;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .knr-product-hero__title {
+      font-size: var(--knr-text-xl);
+      line-height: 1.33;
+      letter-spacing: -0.48px;
+    }
+
+    .knr-product-hero__rating {
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: var(--knr-space-1);
+    }
+
+    .knr-product-hero__rating-dot {
+      display: none;
+    }
+
+    .knr-product-hero__rating-value,
+    .knr-product-hero__rating-count {
+      color: var(--knr-color-surface-4);
+    }
+
+    .knr-product-hero__price-block {
+      align-items: flex-start;
+    }
+
+    .knr-product-hero__price {
+      font-size: var(--knr-text-xl);
+      letter-spacing: -0.48px;
+    }
+
+    .knr-product-hero__compare-price {
+      font-size: var(--knr-text-sm);
+      color: rgb(0 0 0 / 0.24);
+      letter-spacing: -0.24px;
+    }
+
+    .knr-product-hero__unit-price {
+      font-size: var(--knr-text-sm);
+      letter-spacing: -0.24px;
+    }
+
+    .knr-product-hero__option-value {
+      flex: 0 0 auto;
+      padding-inline: var(--knr-space-2);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.product",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Bénéfices"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_benefits",
+      "label": "Afficher les bénéfices",
+      "info": "Tags bénéfices issus du metafield produit knr.benefits.",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Avis & scores"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reviews",
+      "label": "Afficher la note et le nombre d'avis",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_scores",
+      "label": "Afficher les scores",
+      "default": true
+    },
+    {
+      "type": "paragraph",
+      "content": "Note, nombre d'avis et scores proviennent d'un mock JSON (assets/knr-product-data-mock.json) simulant la réponse d'une app d'avis. Pour passer en réel, pointez le fetch vers l'API de l'app."
+    },
+    {
+      "type": "header",
+      "content": "Réassurance"
+    },
+    {
+      "type": "paragraph",
+      "content": "Le carrousel de réassurance est géré par le bloc « Reinsurance carousel » (vitesse + messages regroupés sous une seule entrée). Ajoutez-le si absent."
+    },
+    {
+      "type": "header",
+      "content": "Accordéons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_accordions",
+      "label": "Afficher les accordéons",
+      "default": true
+    },
+    {
+      "type": "paragraph",
+      "content": "Gérés par produit via le metafield knr.accordions (liste de métaobjets « KNR — Accordion item » : titre + contenu rich text + ouverture par défaut). Si le metafield est vide, rien ne s'affiche."
+    },
+    {
+      "type": "header",
+      "content": "Complétez votre rituel"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_complementary",
+      "label": "Afficher la section",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "complementary_title",
+      "label": "t:settings.title",
+      "default": "Complétez votre rituel"
+    },
+    {
+      "type": "paragraph",
+      "content": "Les produits affichés proviennent du metafield produit knr.complementary_products (liste de références produits). Le « + » ajoute la variante par défaut au panier. Si le metafield est vide, la section n'apparaît pas."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "knr-reinsurance"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.product",
+      "blocks": [
+        {
+          "type": "knr-reinsurance",
+          "blocks": [
+            {
+              "type": "knr-reinsurance-message",
+              "settings": { "text": "En stock, livraison estimée {delivery}." }
+            },
+            {
+              "type": "knr-reinsurance-message",
+              "settings": { "text": "Livraison offerte dès 60 € d'achat." }
+            },
+            {
+              "type": "knr-reinsurance-message",
+              "settings": { "text": "Retours sous 30 jours." }
+            },
+            {
+              "type": "knr-reinsurance-message",
+              "settings": { "text": "Paiement sécurisé." }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,39 @@
+{%- liquid
+  assign delivery_days = product.metafields.knr.delivery_days.value
+  assign delivery_date = ''
+  if delivery_days != blank and delivery_days > 0
+    assign delay_seconds = delivery_days | times: 86400
+    assign target_ts = 'now' | date: '%s' | plus: delay_seconds
+    assign delivery_date = target_ts | date: '%A %-d %B' | capitalize
+  endif
+  assign message = block.settings.text | replace: '{delivery}', delivery_date
+-%}
+<button
+  type="button"
+  class="knr-product-hero__step"
+  data-knr-reinsurance-step
+  data-knr-reinsurance-message="{{ message | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <span class="knr-product-hero__step-fill"></span>
+</button>
+
+{% schema %}
+{
+  "name": "Reinsurance message",
+  "settings": [
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:settings.text",
+      "info": "Use {delivery} to insert the dynamic delivery date.",
+      "default": "Paiement sécurisé."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Reinsurance message"
+    }
+  ]
+}
+{% endschema %}

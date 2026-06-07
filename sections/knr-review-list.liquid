@@ -1,0 +1,538 @@
+<script
+  src="{{ 'knr-review-list.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<section
+  class="knr-review-list"
+  data-section-id="{{ section.id }}"
+  data-knr-review-list
+  data-knr-mock-url="{{ 'knr-product-data-mock.json' | asset_url }}"
+  data-knr-rl-rating-suffix="{{ section.settings.rating_suffix | escape }}"
+  data-knr-rl-based-on="{{ section.settings.based_on_label | escape }}"
+  data-knr-rl-verified="{{ section.settings.verified_label | escape }}"
+  data-knr-rl-filter-all="{{ section.settings.filter_all_label | escape }}"
+  data-knr-rl-step="{{ section.settings.step }}"
+  hidden
+>
+  <template data-knr-rl-star>{{ 'knr-icon-star.svg' | inline_asset_content }}</template>
+
+  {%- if section.settings.heading != blank -%}
+    <h2 class="knr-review-list__heading">{{ section.settings.heading }}</h2>
+  {%- endif -%}
+
+  <div class="knr-review-list__summary">
+    <div class="knr-review-list__average" data-knr-rl-average></div>
+    <div class="knr-review-list__distribution" data-knr-rl-distribution></div>
+
+    <div class="knr-review-list__actions">
+      {%- if section.settings.write_url != blank -%}
+        <a
+          class="knr-review-list__btn knr-review-list__btn--primary"
+          href="{{ section.settings.write_url }}"
+        >{{ section.settings.write_label }}</a>
+      {%- else -%}
+        <button type="button" class="knr-review-list__btn knr-review-list__btn--primary">
+          {{- section.settings.write_label -}}
+        </button>
+      {%- endif -%}
+
+      {%- if section.settings.ask_url != blank -%}
+        <a
+          class="knr-review-list__btn knr-review-list__btn--secondary"
+          href="{{ section.settings.ask_url }}"
+        >{{ section.settings.ask_label }}</a>
+      {%- else -%}
+        <button type="button" class="knr-review-list__btn knr-review-list__btn--secondary">
+          {{- section.settings.ask_label -}}
+        </button>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="knr-review-list__list">
+    <div class="knr-review-list__filter">
+      <button
+        type="button"
+        class="knr-review-list__filter-toggle"
+        data-knr-rl-filter-toggle
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        <span class="knr-review-list__filter-icon" aria-hidden="true">
+          {{- 'icon-filter.svg' | inline_asset_content -}}
+        </span>
+        {{ section.settings.filter_label }}
+      </button>
+      <div class="knr-review-list__filter-menu" role="menu" data-knr-rl-filter-menu hidden></div>
+    </div>
+
+    <div class="knr-review-list__items" data-knr-rl-items></div>
+  </div>
+
+  <div class="knr-review-list__footer">
+    <button type="button" class="knr-review-list__btn knr-review-list__btn--secondary" data-knr-rl-more hidden>
+      {{- section.settings.load_more_label -}}
+    </button>
+  </div>
+</section>
+
+{% stylesheet %}
+  .knr-review-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-10);
+    padding: 0 var(--knr-space-6) var(--knr-space-6);
+    background: var(--knr-color-white);
+    color: var(--knr-color-black);
+    font-family: var(--knr-font-sans);
+  }
+
+  .knr-review-list[hidden] {
+    display: none;
+  }
+
+  .knr-review-list__heading {
+    margin: 0;
+    font-weight: 400;
+    font-size: var(--knr-text-xl);
+    letter-spacing: -0.48px;
+    line-height: 32px;
+    text-align: center;
+  }
+
+  /* Star ratings — shared */
+  .knr-review-list__stars {
+    display: inline-flex;
+    align-items: center;
+    color: var(--knr-color-accent);
+  }
+
+  .knr-review-list__star {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+  }
+
+  .knr-review-list__star svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-review-list__star--off {
+    opacity: 0.25;
+  }
+
+  /* Summary */
+  .knr-review-list__summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-10);
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .knr-review-list__average {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-review-list__average-rating {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-review-list__average-value,
+  .knr-review-list__based-on,
+  .knr-review-list__dist-count {
+    margin: 0;
+    color: var(--knr-color-accent);
+    font-size: var(--knr-text-xs);
+    letter-spacing: -0.2px;
+    line-height: 14px;
+  }
+
+  /* Distribution */
+  .knr-review-list__distribution {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-review-list__dist-row {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-1);
+  }
+
+  .knr-review-list__dist-bar {
+    position: relative;
+    display: block;
+    width: 104px;
+    height: 12px;
+    background: var(--knr-color-surface-1);
+  }
+
+  .knr-review-list__dist-fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    background: var(--knr-color-surface-3);
+  }
+
+  .knr-review-list__dist-count {
+    min-width: 13px;
+  }
+
+  /* Action buttons */
+  .knr-review-list__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2);
+    width: 100%;
+  }
+
+  .knr-review-list__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding-inline: var(--knr-space-6);
+    border-radius: 2px;
+    font-size: 0.8125rem;
+    letter-spacing: -0.26px;
+    line-height: 21px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .knr-review-list__btn:hover {
+    opacity: 0.85;
+  }
+
+  .knr-review-list__btn--primary {
+    background: var(--knr-color-black);
+    border: 1px solid var(--knr-color-black);
+    color: var(--knr-color-white);
+  }
+
+  .knr-review-list__btn--secondary {
+    background: transparent;
+    border: 1px solid var(--knr-color-black);
+    color: var(--knr-color-black);
+  }
+
+  /* List */
+  .knr-review-list__list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .knr-review-list__filter {
+    position: relative;
+  }
+
+  .knr-review-list__filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2);
+    width: 100%;
+    padding: 0 0 var(--knr-space-4);
+    background: transparent;
+    border: 0;
+    border-block-end: 0.8px solid var(--knr-color-border);
+    color: var(--knr-color-black);
+    font-family: inherit;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+    cursor: pointer;
+  }
+
+  .knr-review-list__filter-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+  }
+
+  .knr-review-list__filter-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .knr-review-list__filter-menu {
+    position: absolute;
+    z-index: 2;
+    inset-inline-start: 0;
+    inset-block-start: calc(100% + var(--knr-space-1));
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: var(--knr-space-1);
+    background: var(--knr-color-white);
+    border: 0.8px solid var(--knr-color-border);
+    border-radius: 2px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
+  }
+
+  .knr-review-list__filter-menu[hidden] {
+    display: none;
+  }
+
+  .knr-review-list__filter-option {
+    padding: var(--knr-space-2) var(--knr-space-3);
+    background: transparent;
+    border: 0;
+    color: var(--knr-color-black);
+    font-family: inherit;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .knr-review-list__filter-option:hover {
+    background: var(--knr-color-surface-1);
+  }
+
+  .knr-review-list__filter-option[aria-checked='true'] {
+    color: var(--knr-color-accent);
+  }
+
+  .knr-review-list__items {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .knr-review-list__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-4);
+    padding-block: var(--knr-space-4);
+    border-block-end: 0.8px solid var(--knr-color-border);
+  }
+
+  .knr-review-list__item-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .knr-review-list__date {
+    color: var(--knr-color-black);
+    font-size: var(--knr-text-xs);
+    letter-spacing: -0.2px;
+    line-height: 14px;
+  }
+
+  .knr-review-list__reviewer {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-review-list__author {
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+  }
+
+  .knr-review-list__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px var(--knr-space-1) 4px;
+    border: 0.5px solid var(--knr-color-black);
+    border-radius: 2px;
+    font-size: 0.5rem;
+    letter-spacing: -0.32px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .knr-review-list__review-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-review-list__review-title,
+  .knr-review-list__review-text {
+    margin: 0;
+    font-size: var(--knr-text-sm);
+    letter-spacing: -0.24px;
+    line-height: 20px;
+  }
+
+  .knr-review-list__footer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Full-width "load more" on mobile (desktop sets a fixed 250px below). */
+  .knr-review-list__footer .knr-review-list__btn {
+    width: 100%;
+  }
+
+  .knr-review-list__footer .knr-review-list__btn[hidden] {
+    display: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-review-list {
+      padding: 0 2.5rem var(--knr-space-16);
+    }
+
+    .knr-review-list__heading {
+      font-size: 2rem;
+      letter-spacing: -1.28px;
+      line-height: 40px;
+      padding-bottom: 40px;
+    }
+
+    .knr-review-list__summary {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--knr-space-4);
+    }
+
+    .knr-review-list__average {
+      flex: 1;
+      align-items: flex-start;
+    }
+
+    .knr-review-list__distribution {
+      flex: 1;
+      align-items: flex-start;
+    }
+
+    .knr-review-list__actions {
+      flex: 1;
+      align-items: flex-end;
+      width: auto;
+    }
+
+    .knr-review-list__btn {
+      width: 250px;
+    }
+
+    .knr-review-list__footer .knr-review-list__btn {
+      width: 250px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "KNR Review list",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Section « Avis clients » alimentée par le même mock JSON que le carrousel (assets/knr-product-data-mock.json) simulant la réponse d'une app d'avis : note moyenne, répartition par étoiles, liste filtrable et pagination « Charger plus ». Pour passer en réel, pointez le fetch vers l'API de l'app. La section se masque si aucun avis n'est retourné."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Titre",
+      "default": "Avis clients"
+    },
+    {
+      "type": "text",
+      "id": "rating_suffix",
+      "label": "Suffixe de note",
+      "default": "sur 5"
+    },
+    {
+      "type": "text",
+      "id": "based_on_label",
+      "label": "Texte « basé sur »",
+      "info": "Utilisez {count} et {label} comme variables.",
+      "default": "Basé sur {count} {label}"
+    },
+    {
+      "type": "header",
+      "content": "Actions"
+    },
+    {
+      "type": "text",
+      "id": "write_label",
+      "label": "Bouton « écrire un avis »",
+      "default": "Écrire un avis"
+    },
+    {
+      "type": "url",
+      "id": "write_url",
+      "label": "Lien « écrire un avis »"
+    },
+    {
+      "type": "text",
+      "id": "ask_label",
+      "label": "Bouton « poser une question »",
+      "default": "Poser une question"
+    },
+    {
+      "type": "url",
+      "id": "ask_url",
+      "label": "Lien « poser une question »"
+    },
+    {
+      "type": "header",
+      "content": "Liste"
+    },
+    {
+      "type": "text",
+      "id": "filter_label",
+      "label": "Libellé du filtre",
+      "default": "Filtrer"
+    },
+    {
+      "type": "text",
+      "id": "filter_all_label",
+      "label": "Option « tous les avis »",
+      "default": "Tous les avis"
+    },
+    {
+      "type": "text",
+      "id": "verified_label",
+      "label": "Badge « vérifié »",
+      "default": "Vérifié"
+    },
+    {
+      "type": "text",
+      "id": "load_more_label",
+      "label": "Bouton « charger plus »",
+      "default": "Charger plus"
+    },
+    {
+      "type": "range",
+      "id": "step",
+      "label": "Avis affichés par palier",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "KNR Review list"
+    }
+  ]
+}
+{% endschema %}

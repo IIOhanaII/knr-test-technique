@@ -1,0 +1,178 @@
+{%- liquid
+  assign autoplay = false
+  if section.blocks.size > 1
+    assign autoplay = true
+  endif
+-%}
+
+{%- if autoplay -%}
+  <script
+    src="{{ 'announcement-bar.js' | asset_url }}"
+    type="module"
+    fetchpriority="low"
+  ></script>
+{%- endif -%}
+
+<aside
+  class="knr-announcement-bar"
+  style="--knr-bar-bg: {{ section.settings.background_color }}; --knr-bar-color: {{ section.settings.text_color }};"
+>
+  <announcement-bar-component
+    class="knr-announcement-bar__slider"
+    {% if autoplay %}
+      autoplay="{{ section.settings.speed }}" aria-live="polite"
+    {% endif %}
+  >
+    <div class="knr-announcement-bar__slides">
+      {%- for block in section.blocks -%}
+        <div
+          ref="slides[]"
+          class="knr-announcement-bar__slide{% if block.settings.underline %} knr-announcement-bar__slide--underline{% endif %}"
+          aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}"
+          {{ block.shopify_attributes }}
+        >
+          {%- if block.settings.link != blank -%}
+            <a class="knr-announcement-bar__link" href="{{ block.settings.link }}">{{ block.settings.text }}</a>
+          {%- else -%}
+            {{- block.settings.text -}}
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </announcement-bar-component>
+</aside>
+
+{% stylesheet %}
+  .knr-announcement-bar {
+    --knr-bar-height: 32px;
+    --knr-bar-underline-width: 0.8px;
+    --knr-bar-fade-duration: 0.5s;
+
+    background: var(--knr-bar-bg, var(--knr-color-black));
+    color: var(--knr-bar-color, var(--knr-color-white));
+    font-family: var(--knr-font-sans);
+    font-size: var(--knr-text-sm);
+    line-height: 1;
+    width: 100%;
+  }
+
+  .knr-announcement-bar__link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: var(--knr-bar-underline-width);
+    text-underline-offset: var(--knr-space-1);
+  }
+
+  .knr-announcement-bar__slider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--knr-bar-height);
+    padding-block: var(--knr-space-2);
+    padding-inline: var(--knr-space-4);
+  }
+
+  .knr-announcement-bar__slides {
+    display: grid;
+    grid-template-areas: 'stack';
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .knr-announcement-bar__slide {
+    grid-area: stack;
+    text-align: center;
+    transition: opacity var(--knr-bar-fade-duration) ease-in-out,
+                visibility var(--knr-bar-fade-duration) ease-in-out;
+  }
+
+  .knr-announcement-bar__slide[aria-hidden='true'] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .knr-announcement-bar__slide--underline {
+    text-decoration: underline;
+    text-decoration-thickness: var(--knr-bar-underline-width);
+    text-underline-offset: var(--knr-space-1);
+  }
+
+  @media screen and (min-width: 750px) {
+    .knr-announcement-bar {
+      --knr-bar-height: 36px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.announcement_bar",
+  "tag": "section",
+  "class": "knr-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "speed",
+      "label": "t:settings.scroll_speed",
+      "min": 2,
+      "max": 10,
+      "default": 5,
+      "unit": "sec"
+    },
+    {
+      "type": "header",
+      "content": "Couleurs"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Couleur d'arrière-plan",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Couleur du texte",
+      "default": "#ffffff"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "announcement",
+      "name": "t:names.announcement",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "t:settings.text",
+          "default": "Livraison estimée sous 48h"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Lien"
+        },
+        {
+          "type": "checkbox",
+          "id": "underline",
+          "label": "t:options.underline",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "t:names.announcement_bar",
+      "blocks": [
+        { "type": "announcement", "settings": { "text": "Livraison estimée sous 48h" } },
+        { "type": "announcement", "settings": { "text": "Consectetur.", "underline": true } }
+      ]
+    }
+  ]
+}
+{% endschema %}
