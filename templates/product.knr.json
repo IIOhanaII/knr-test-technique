@@ -1,15 +1,17 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "layout": "knr",
   "sections": {
     "knr-product-hero": {
       "type": "knr-product-hero",
-      "settings": {
-        "show_reviews": true,
-        "show_scores": true,
-        "show_accordions": true,
-        "show_complementary": true,
-        "complementary_title": "Complétez votre rituel"
-      },
       "blocks": {
         "reinsurance": {
           "type": "knr-reinsurance",
@@ -50,10 +52,20 @@
           ]
         }
       },
-      "block_order": ["reinsurance"]
+      "block_order": [
+        "reinsurance"
+      ],
+      "settings": {
+        "show_reviews": true,
+        "show_scores": true,
+        "show_accordions": true,
+        "show_complementary": true,
+        "complementary_title": "Complétez votre rituel"
+      }
     },
     "knr-manifesto": {
-      "type": "knr-manifesto"
+      "type": "knr-manifesto",
+      "settings": {}
     },
     "knr-how-to-use": {
       "type": "knr-how-to-use",
@@ -62,7 +74,8 @@
       }
     },
     "knr-before-after": {
-      "type": "knr-before-after"
+      "type": "knr-before-after",
+      "settings": {}
     },
     "knr-faqs": {
       "type": "knr-faqs",
@@ -84,7 +97,8 @@
       }
     },
     "knr-newsletter": {
-      "type": "knr-newsletter"
+      "type": "knr-newsletter",
+      "settings": {}
     },
     "knr-reinsurance-bar": {
       "type": "knr-reinsurance-bar",
@@ -123,7 +137,8 @@
         "reinsurance-2",
         "reinsurance-3",
         "reinsurance-4"
-      ]
+      ],
+      "settings": {}
     }
   },
   "order": [

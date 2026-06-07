@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "type": "header",
   "name": "KNR Header",
@@ -19,7 +28,11 @@
           }
         }
       },
-      "block_order": ["msg-1", "msg-2"]
+      "block_order": [
+        "msg-1",
+        "msg-2"
+      ],
+      "settings": {}
     },
     "knr-header": {
       "type": "knr-header",
@@ -32,5 +45,8 @@
       }
     }
   },
-  "order": ["knr-announcement", "knr-header"]
+  "order": [
+    "knr-announcement",
+    "knr-header"
+  ]
 }
