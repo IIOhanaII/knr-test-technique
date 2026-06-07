@@ -23,25 +23,29 @@
               "type": "knr-reinsurance-message",
               "settings": {
                 "text": "En stock, livraison estimée {delivery}."
-              }
+              },
+              "blocks": {}
             },
             "reinsurance-2": {
               "type": "knr-reinsurance-message",
               "settings": {
                 "text": "Livraison offerte dès 60 € d'achat."
-              }
+              },
+              "blocks": {}
             },
             "reinsurance-3": {
               "type": "knr-reinsurance-message",
               "settings": {
                 "text": "Retours sous 30 jours."
-              }
+              },
+              "blocks": {}
             },
             "reinsurance-4": {
               "type": "knr-reinsurance-message",
               "settings": {
                 "text": "Paiement sécurisé."
-              }
+              },
+              "blocks": {}
             }
           },
           "block_order": [
@@ -56,6 +60,7 @@
         "reinsurance"
       ],
       "settings": {
+        "show_benefits": true,
         "show_reviews": true,
         "show_scores": true,
         "show_accordions": true,
@@ -70,12 +75,16 @@
     "knr-how-to-use": {
       "type": "knr-how-to-use",
       "settings": {
-        "heading": "How to use"
+        "heading": "How to use",
+        "default_link_label": "Lire plus"
       }
     },
     "knr-before-after": {
       "type": "knr-before-after",
-      "settings": {}
+      "settings": {
+        "before_label": "Before",
+        "after_label": "After"
+      }
     },
     "knr-faqs": {
       "type": "knr-faqs",
@@ -87,18 +96,37 @@
       "type": "knr-review-list",
       "settings": {
         "heading": "Avis clients",
-        "ask_url": "/pages/contact"
+        "rating_suffix": "sur 5",
+        "based_on_label": "Basé sur {count} {label}",
+        "write_label": "Écrire un avis",
+        "write_url": "",
+        "ask_label": "Poser une question",
+        "ask_url": "/pages/contact",
+        "filter_label": "Filtrer",
+        "filter_all_label": "Tous les avis",
+        "verified_label": "Vérifié",
+        "load_more_label": "Charger plus",
+        "step": 3
       }
     },
     "knr-latest-news": {
       "type": "knr-latest-news",
       "settings": {
-        "heading": "Latest news"
+        "heading": "Latest news",
+        "blog": "latest-news",
+        "post_limit": 4,
+        "show_view_all": true,
+        "view_all_label": "Voir tous les articles"
       }
     },
     "knr-newsletter": {
       "type": "knr-newsletter",
-      "settings": {}
+      "settings": {
+        "heading": "L’alliance de la science botanique et du luxe naturel pour une peau visiblement rajeunie en 4 semaines.",
+        "placeholder": "E-mail",
+        "button_label": "S’inscrire",
+        "fine_print": "Formule brevetée, testée dermatologiquement, 97 % d’ingrédients d’origine naturelle."
+      }
     },
     "knr-reinsurance-bar": {
       "type": "knr-reinsurance-bar",
@@ -107,28 +135,32 @@
           "type": "reinsurance_item",
           "settings": {
             "title": "Livraison offerte",
-            "text": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine."
+            "text": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine.",
+            "link": ""
           }
         },
         "reinsurance-2": {
           "type": "reinsurance_item",
           "settings": {
             "title": "Retours gratuits",
-            "text": "Retours acceptés\njusqu'à 30 jours\naprès réception."
+            "text": "Retours acceptés\njusqu'à 30 jours\naprès réception.",
+            "link": ""
           }
         },
         "reinsurance-3": {
           "type": "reinsurance_item",
           "settings": {
             "title": "Paiement sécurisé",
-            "text": "Paiement 100 % sécurisé\npar carte bancaire,\nPayPal ou virement."
+            "text": "Paiement 100 % sécurisé\npar carte bancaire,\nPayPal ou virement.",
+            "link": ""
           }
         },
         "reinsurance-4": {
           "type": "reinsurance_item",
           "settings": {
             "title": "Service client",
-            "text": "Du lundi au vendredi\nde 9h à 18h par email\net téléphone."
+            "text": "Du lundi au vendredi\nde 9h à 18h par email\net téléphone.",
+            "link": ""
           }
         }
       },
@@ -138,7 +170,10 @@
         "reinsurance-3",
         "reinsurance-4"
       ],
-      "settings": {}
+      "settings": {
+        "background": "#dcd5c3",
+        "rotation_speed": 4
+      }
     }
   },
   "order": [
