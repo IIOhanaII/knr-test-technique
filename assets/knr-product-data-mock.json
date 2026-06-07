@@ -3,7 +3,14 @@
   "rating": {
     "value": 4.7,
     "count": 200,
-    "label": "avis"
+    "label": "avis",
+    "distribution": [
+      { "stars": 5, "count": 32 },
+      { "stars": 4, "count": 10 },
+      { "stars": 3, "count": 5 },
+      { "stars": 2, "count": 6 },
+      { "stars": 1, "count": 1 }
+    ]
   },
   "scores": [
     { "label": "Yuka", "value": "100/100" },
@@ -13,16 +20,57 @@
     {
       "author": "Clara T.",
       "rating": 5,
+      "verified": true,
+      "date": "2026-02-09",
+      "title": "Après usage d'1 mois",
       "text": "J'utilise ce sérum depuis trois mois et la différence est saisissante. Mes rides d'expression se sont considérablement atténuées et mon teint a retrouvé une luminosité que je n'avais plus depuis des années. Une texture soyeuse qui pénètre instantanément. Je ne peux plus m'en passer."
+    },
+    {
+      "author": "Mathilde S.",
+      "rating": 5,
+      "verified": true,
+      "date": "2026-02-09",
+      "title": "Après usage d'1 mois",
+      "text": "Maison Célestine est une marque de soins anti-âge haut de gamme formulée autour d'actifs rares et certifiés biologiques, guidée par une expertise médicale et un rituel simple, précis et efficace."
+    },
+    {
+      "author": "Inès B.",
+      "rating": 4,
+      "verified": true,
+      "date": "2026-01-28",
+      "title": "Une belle découverte",
+      "text": "Texture agréable et fini non gras. J'aurais aimé un format un peu plus généreux, mais les résultats sur l'éclat du teint sont au rendez-vous après quelques semaines."
+    },
+    {
+      "author": "Camille D.",
+      "rating": 5,
+      "verified": true,
+      "date": "2026-01-15",
+      "title": "Mon rituel du soir",
+      "text": "Je l'applique chaque soir après ma lotion. La peau est repulpée au réveil et le grain de peau s'est nettement affiné. Un produit qui tient ses promesses."
+    },
+    {
+      "author": "Sophie L.",
+      "rating": 4,
+      "verified": false,
+      "date": "2025-12-30",
+      "title": "Bon produit",
+      "text": "Sérum efficace et agréable à utiliser. Le parfum est discret, ce que j'apprécie pour un soin du visage. Je rachèterai."
     },
     {
       "author": "Jon Doe",
       "rating": 5,
+      "verified": true,
+      "date": "2025-12-12",
+      "title": "Lorem ipsum",
       "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
     },
     {
       "author": "Jon Doe",
       "rating": 4,
+      "verified": false,
+      "date": "2025-11-20",
+      "title": "Lorem ipsum",
       "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident."
     }
   ]

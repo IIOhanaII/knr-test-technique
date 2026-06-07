@@ -98,11 +98,17 @@
       </button>
     {%- endif -%}
 
-    {%- if benefits != blank and benefits.size > 0 -%}
+    {%- if section.settings.show_benefits and benefits != blank and benefits.size > 0 -%}
       <div class="knr-product-hero__benefits knr-product-hero__benefits--mobile">
         {%- for benefit in benefits -%}
           <span class="knr-product-hero__benefit">{{ benefit }}</span>
         {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    {%- if product.media.size > 1 -%}
+      <div class="knr-product-hero__gallery-progress" data-knr-gallery-progress aria-hidden="true">
+        <span class="knr-product-hero__gallery-progress-thumb" data-knr-gallery-progress-thumb></span>
       </div>
     {%- endif -%}
   </div>
@@ -132,7 +138,7 @@
       </p>
     {%- endif -%}
 
-    {%- if benefits != blank and benefits.size > 0 -%}
+    {%- if section.settings.show_benefits and benefits != blank and benefits.size > 0 -%}
       <div class="knr-product-hero__benefits knr-product-hero__benefits--desktop">
         {%- for benefit in benefits -%}
           <span class="knr-product-hero__benefit knr-product-hero__benefit--outline">{{ benefit }}</span>
@@ -158,11 +164,15 @@
           </s>
         {%- endif -%}
       </div>
-      {%- if current_variant.unit_price_measurement -%}
-        <small class="knr-product-hero__unit-price" data-knr-unit-price>
+      <small
+        class="knr-product-hero__unit-price"
+        data-knr-unit-price
+        {% unless current_variant.unit_price_measurement %}hidden{% endunless %}
+      >
+        {%- if current_variant.unit_price_measurement -%}
           {{- current_variant.unit_price | unit_price_with_measurement: current_variant.unit_price_measurement -}}
-        </small>
-      {%- endif -%}
+        {%- endif -%}
+      </small>
     </div>
 
     {%- if section.settings.show_scores -%}
@@ -372,7 +382,7 @@
     --knr-hero-atc-radius: 2px;
     --knr-hero-option-underline-width: 0.8px;
     --knr-hero-step-width: 16px;
-    --knr-hero-arrow-size: 40px;
+    --knr-hero-arrow-size: 16px;
 
     display: flex;
     flex-direction: column;
@@ -424,6 +434,28 @@
 
   .knr-product-hero__gallery-zoom {
     display: none;
+  }
+
+  /* Mobile swipe progress bar for the image gallery, sitting just above the
+     overlapping details card. */
+  .knr-product-hero__gallery-progress {
+    position: absolute;
+    inset-block-end: calc(var(--knr-hero-overlap) + var(--knr-space-4));
+    inset-inline: 0;
+    width: 64px;
+    height: 1px;
+    margin-inline: auto;
+    background: var(--knr-color-surface-3);
+    z-index: 3;
+  }
+
+  .knr-product-hero__gallery-progress-thumb {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 33%;
+    background: var(--knr-color-black);
+    will-change: transform;
   }
 
   .knr-product-hero__benefits {
@@ -513,6 +545,7 @@
     position: relative;
     margin-top: calc(var(--knr-hero-overlap) * -1);
     margin-inline: var(--knr-space-4);
+    margin-bottom: var(--knr-space-6);
     padding: var(--knr-space-6) var(--knr-space-4) var(--knr-space-8);
     background: var(--knr-color-white);
     display: grid;
@@ -574,6 +607,10 @@
     color: var(--knr-color-accent);
     font-size: 0.5rem;
     letter-spacing: -0.16px;
+  }
+
+  .knr-product-hero__unit-price[hidden] {
+    display: none;
   }
 
   .knr-product-hero__rating {
@@ -659,6 +696,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--knr-space-2);
+    padding-top: var(--knr-space-2);
   }
 
   .knr-product-hero__option {
@@ -705,6 +743,7 @@
 
   .knr-product-hero__form-wrapper {
     grid-area: atc;
+    padding-top: var(--knr-space-2);
   }
 
   .knr-product-hero__atc {
@@ -794,10 +833,6 @@
     padding-block: var(--knr-space-5);
   }
 
-  .knr-product-hero__accordion:last-child {
-    border-block-end: 0.8px solid var(--knr-color-border);
-  }
-
   .knr-product-hero__accordion-header {
     display: flex;
     align-items: center;
@@ -827,7 +862,6 @@
   }
 
   .knr-product-hero__accordion-body {
-    padding-block-start: var(--knr-space-2);
     font-size: var(--knr-text-sm);
     letter-spacing: -0.24px;
     line-height: 1.66;
@@ -1028,7 +1062,7 @@
         minmax(0, 1fr)
         calc(var(--knr-hero-card-width) + var(--knr-hero-card-right));
       align-items: start;
-      background: var(--knr-color-surface-1);
+      background: var(--knr-color-white);
     }
 
     .knr-product-hero__media {
@@ -1038,6 +1072,12 @@
       height: auto;
       aspect-ratio: auto;
       overflow: visible;
+    }
+
+    /* Paint slides white so sub-pixel seams between stacked images never
+       reveal a darker page background as a thin line. */
+    .knr-product-hero__gallery-slide {
+      background: var(--knr-color-white);
     }
 
     .knr-product-hero__gallery {
@@ -1086,6 +1126,10 @@
       display: none;
     }
 
+    .knr-product-hero__gallery-progress {
+      display: none;
+    }
+
     .knr-product-hero__gallery-zoom {
       position: absolute;
       inset-block-end: var(--knr-space-6);
@@ -1113,9 +1157,15 @@
       grid-row: 1 / 2;
       z-index: 2;
       align-self: start;
-      width: var(--knr-hero-card-width);
+      /* Card width + 8px and a -8px left margin so it pulls left over the
+         gallery gutter and sits flush against the second secondary photo
+         (no visible margin between them), while keeping the right gutter
+         at --knr-hero-card-right. Auto margins can't go negative, hence the
+         explicit value. */
+      width: calc(var(--knr-hero-card-width) + var(--knr-space-2));
       margin-block-start: var(--knr-hero-card-top);
-      margin-inline-start: auto;
+      margin-block-end: 0;
+      margin-inline-start: calc(var(--knr-space-2) * -1);
       margin-inline-end: var(--knr-hero-card-right);
       padding: var(--knr-hero-card-padding);
       background: var(--knr-color-white);
@@ -1132,7 +1182,53 @@
         'announcement announcement'
         'accordions accordions'
       'complementary complementary';
-      row-gap: var(--knr-space-6);
+      /* Gaps are controlled per-row via margin-block-start below so the
+         design's varying spacing (16px / 24px / 40px) can be honored. */
+      row-gap: 0;
+    }
+
+    /* Per-row vertical rhythm (desktop card) */
+    .knr-product-hero__benefits--desktop {
+      margin-block-start: 40px;
+    }
+
+    .knr-product-hero__title,
+    .knr-product-hero__rating {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__scores {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__short-description {
+      margin-block-start: var(--knr-space-4);
+    }
+
+    .knr-product-hero__variants {
+      margin-block-start: 40px;
+      padding-top: 0;
+    }
+
+    .knr-product-hero__price-block {
+      margin-block-start: var(--knr-space-6);
+    }
+
+    .knr-product-hero__form-wrapper {
+      margin-block-start: 40px;
+      padding-top: 0;
+    }
+
+    .knr-product-hero__announcement {
+      margin-block-start: var(--knr-space-4);
+    }
+
+    .knr-product-hero__accordions {
+      margin-block-start: 40px;
+    }
+
+    .knr-product-hero__complementary {
+      margin-block-start: var(--knr-space-6);
     }
 
     .knr-product-hero__breadcrumb {
@@ -1207,6 +1303,17 @@
     "templates": ["product"]
   },
   "settings": [
+    {
+      "type": "header",
+      "content": "Bénéfices"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_benefits",
+      "label": "Afficher les bénéfices",
+      "info": "Tags bénéfices issus du metafield produit knr.benefits.",
+      "default": true
+    },
     {
       "type": "header",
       "content": "Avis & scores"

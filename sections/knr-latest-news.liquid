@@ -9,7 +9,7 @@
         <h2 class="knr-latest-news__heading">{{ section.settings.heading }}</h2>
       {%- endif -%}
       {%- if section.settings.show_view_all and section.settings.view_all_label != blank -%}
-        <a class="knr-latest-news__view-all" href="{{ news_blog.url }}">
+        <a class="knr-latest-news__view-all knr-latest-news__view-all--desktop" href="{{ news_blog.url }}">
           {{- section.settings.view_all_label -}}
         </a>
       {%- endif -%}
@@ -63,6 +63,12 @@
     <div class="knr-latest-news__progress" data-knr-news-progress aria-hidden="true">
       <span class="knr-latest-news__progress-thumb" data-knr-news-progress-thumb></span>
     </div>
+
+    {%- if section.settings.show_view_all and section.settings.view_all_label != blank -%}
+      <a class="knr-latest-news__view-all knr-latest-news__view-all--mobile" href="{{ news_blog.url }}">
+        {{- section.settings.view_all_label -}}
+      </a>
+    {%- endif -%}
   </section>
 {%- endif -%}
 
@@ -106,14 +112,25 @@
     white-space: nowrap;
   }
 
+  /* Mobile: shown below the progress bar; desktop link stays in the header. */
+  .knr-latest-news__view-all--desktop {
+    display: none;
+  }
+
+  .knr-latest-news__view-all--mobile {
+    align-self: center;
+  }
+
   .knr-latest-news__list {
     display: flex;
     gap: var(--knr-space-2);
     margin: 0;
-    padding: 0 var(--knr-space-6);
+    padding: 0 0 0 var(--knr-space-6);
     list-style: none;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    /* Keep the 24px left gutter visible despite mandatory snap. */
+    scroll-padding-inline-start: var(--knr-space-6);
     scrollbar-width: none;
   }
 
@@ -204,7 +221,7 @@
 
   @media screen and (min-width: 750px) {
     .knr-latest-news {
-      padding-block: var(--knr-space-10) 7.5rem;
+      padding-block: var(--knr-space-16);
     }
 
     .knr-latest-news__header {
@@ -228,6 +245,14 @@
     }
 
     .knr-latest-news__progress {
+      display: none;
+    }
+
+    .knr-latest-news__view-all--desktop {
+      display: inline-block;
+    }
+
+    .knr-latest-news__view-all--mobile {
       display: none;
     }
   }

@@ -13,11 +13,17 @@
           data-knr-reinsurance-item
           {{ block.shopify_attributes }}
         >
+          {%- if block.settings.link != blank -%}
+            <a class="knr-reinsurance-bar__item-link" href="{{ block.settings.link }}">
+          {%- endif -%}
           {%- if block.settings.title != blank -%}
             <p class="knr-reinsurance-bar__item-title">{{ block.settings.title }}</p>
           {%- endif -%}
           {%- if block.settings.text != blank -%}
             <p class="knr-reinsurance-bar__item-text">{{ block.settings.text | newline_to_br }}</p>
+          {%- endif -%}
+          {%- if block.settings.link != blank -%}
+            </a>
           {%- endif -%}
         </li>
       {%- endfor -%}
@@ -74,6 +80,20 @@
   .knr-reinsurance-bar__item.is-active {
     opacity: 1;
     visibility: visible;
+  }
+
+  .knr-reinsurance-bar__item-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--knr-space-4);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .knr-reinsurance-bar__item-link:hover .knr-reinsurance-bar__item-title {
+    text-decoration: underline;
+    text-underline-offset: var(--knr-space-1);
   }
 
   .knr-reinsurance-bar__item-title {
@@ -268,6 +288,12 @@
           "label": "Texte",
           "info": "Les retours à la ligne sont conservés.",
           "default": "Livraison offerte\ndès 60 € d'achat\nen France métropolitaine."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Lien",
+          "info": "Rend l'argument entièrement cliquable."
         }
       ]
     }

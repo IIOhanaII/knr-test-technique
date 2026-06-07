@@ -77,18 +77,21 @@
     font-size: 2rem;
     letter-spacing: -1.28px;
     line-height: 40px;
-    text-align: center;
+    text-align: start;
   }
 
   .knr-how-to-use__list {
     display: flex;
     gap: var(--knr-space-2);
     margin: 0;
-    padding: 0 var(--knr-space-6);
+    padding: 0 0 0 var(--knr-space-6);
     list-style: none;
     width: 100%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    /* Keep the 24px left gutter: without this, mandatory snap aligns the
+       first card flush to the edge and eats the padding-left. */
+    scroll-padding-inline-start: var(--knr-space-6);
     scrollbar-width: none;
   }
 
@@ -182,7 +185,6 @@
 
     .knr-how-to-use__heading {
       padding-inline: 2.5rem;
-      text-align: start;
     }
 
     .knr-how-to-use__list {

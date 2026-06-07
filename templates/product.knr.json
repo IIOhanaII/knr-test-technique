@@ -73,7 +73,8 @@
     "knr-review-list": {
       "type": "knr-review-list",
       "settings": {
-        "heading": "Avis clients"
+        "heading": "Avis clients",
+        "ask_url": "/pages/contact"
       }
     },
     "knr-latest-news": {
@@ -81,6 +82,9 @@
       "settings": {
         "heading": "Latest news"
       }
+    },
+    "knr-newsletter": {
+      "type": "knr-newsletter"
     },
     "knr-reinsurance-bar": {
       "type": "knr-reinsurance-bar",
@@ -130,6 +134,7 @@
     "knr-faqs",
     "knr-review-list",
     "knr-latest-news",
+    "knr-newsletter",
     "knr-reinsurance-bar"
   ]
 }

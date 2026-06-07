@@ -24,6 +24,8 @@ class KnrProductHero {
     this.gallery = section.querySelector('[data-knr-gallery]');
     this.prevBtn = section.querySelector('[data-knr-gallery-prev]');
     this.nextBtn = section.querySelector('[data-knr-gallery-next]');
+    this.galleryProgress = section.querySelector('[data-knr-gallery-progress]');
+    this.galleryProgressThumb = section.querySelector('[data-knr-gallery-progress-thumb]');
     this.lightbox = section.querySelector('[data-knr-lightbox]');
     this.lightboxImage = section.querySelector('[data-knr-lightbox-image]');
     this.lightboxClose = section.querySelector('[data-knr-lightbox-close]');
@@ -32,7 +34,16 @@ class KnrProductHero {
     this.#bindGallery();
     this.#bindLightbox();
     this.#bindReinsuranceCarousel();
+    this.#initPriceDisplay();
     this.#hydrateMockData();
+  }
+
+  #initPriceDisplay() {
+    const id = this.variantInput ? parseInt(this.variantInput.value, 10) : NaN;
+    const variant = this.variants.find((v) => v.id === id) ?? this.variants[0];
+    if (!variant) return;
+    this.#updatePrice(variant);
+    this.#updateUnitPrice(variant);
   }
 
   #bindReinsuranceCarousel() {
@@ -77,6 +88,27 @@ class KnrProductHero {
       this.gallery.addEventListener('scroll', () => this.#updateArrowState(), { passive: true });
       this.#updateArrowState();
     }
+
+    if (this.galleryProgress && this.galleryProgressThumb) {
+      this.gallery.addEventListener('scroll', () => this.#updateGalleryProgress(), { passive: true });
+      window.addEventListener('resize', () => this.#updateGalleryProgress());
+      this.#updateGalleryProgress();
+    }
+  }
+
+  #updateGalleryProgress() {
+    if (!this.gallery || !this.galleryProgress || !this.galleryProgressThumb) return;
+    const max = this.gallery.scrollWidth - this.gallery.clientWidth;
+    if (max <= 1) {
+      this.galleryProgress.style.visibility = 'hidden';
+      return;
+    }
+    this.galleryProgress.style.visibility = '';
+    const trackW = this.galleryProgress.clientWidth;
+    const thumbW = Math.max(trackW * (this.gallery.clientWidth / this.gallery.scrollWidth), 8);
+    const progress = this.gallery.scrollLeft / max;
+    this.galleryProgressThumb.style.width = `${thumbW}px`;
+    this.galleryProgressThumb.style.transform = `translateX(${progress * (trackW - thumbW)}px)`;
   }
 
   #scrollGallery(direction) {
