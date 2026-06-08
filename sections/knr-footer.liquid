@@ -439,9 +439,14 @@
     .knr-footer__about {
       flex: 1 1 0;
       min-width: 0;
-      border-block-start: 0;
       border-block-end: 0;
       padding-block: 0;
+    }
+
+    /* Divider above the first column is mobile-only; same selector as the
+       base rule so this override wins on desktop. */
+    .knr-footer__col:first-of-type {
+      border-block-start: 0;
     }
 
     /* Columns are always expanded on desktop — disable the accordion. */
