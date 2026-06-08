@@ -122,6 +122,7 @@
     "knr-newsletter": {
       "type": "knr-newsletter",
       "settings": {
+        "image": "shopify://shop_images/9859136db17d131b50492fe1db2318b7b1a8868d.png",
         "heading": "L’alliance de la science botanique et du luxe naturel pour une peau visiblement rajeunie en 4 semaines.",
         "placeholder": "E-mail",
         "button_label": "S’inscrire",

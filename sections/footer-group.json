@@ -17,17 +17,26 @@
         "menu": "footer",
         "about_heading": "À propos de Maison Célestine",
         "about_text": "<p>Maison Célestine est une marque de soins anti-âge haut de gamme formulée autour d'actifs rares et certifiés biologiques, guidée par une expertise médicale et un rituel simple, précis et efficace.</p>",
+        "cert_image": "shopify://shop_images/Calque_1.png",
         "cert_text": "Certifié COSMOS ORGANIC par ECOCERT Greenlife",
         "cert_link_label": "Voir le certificat",
+        "cert_link_url": "",
+        "signature_image": "shopify://shop_images/Union_8fdba58b-d4b9-4eaa-88dc-71e2d139a3ac.png",
+        "signature_alt": "",
         "show_localization": true,
         "copyright_name": "Maison Célestine",
         "copyright_text": "Tous droits réservés.",
         "facebook_url": "https://www.facebook.com/",
         "instagram_url": "https://www.instagram.com/",
         "tiktok_url": "https://www.tiktok.com/",
-        "linkedin_url": "https://www.linkedin.com/"
+        "linkedin_url": "https://www.linkedin.com/",
+        "youtube_url": "",
+        "twitter_url": "",
+        "pinterest_url": ""
       }
     }
   },
-  "order": ["knr_footer"]
+  "order": [
+    "knr_footer"
+  ]
 }
