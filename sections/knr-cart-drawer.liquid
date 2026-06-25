@@ -118,6 +118,15 @@
 -%}
 
 <script src="{{ 'cart-drawer.js' | asset_url }}" type="module" fetchpriority="low"></script>
+{%- comment -%}
+  Cart-items + quantity-selector components must load unconditionally: a <script>
+  inserted by the live morph (empty → non-empty cart) never executes, so these
+  custom elements would stay undefined and the quantity stepper dead until a full
+  page reload. Loading them here (always present) lets the morphed-in elements
+  upgrade on their own.
+{%- endcomment -%}
+<script src="{{ 'component-cart-items.js' | asset_url }}" type="module" fetchpriority="low"></script>
+<script src="{{ 'component-cart-quantity-selector.js' | asset_url }}" type="module" fetchpriority="low"></script>
 
 {%- capture progress_markup -%}
   <div class="knr-cart-rewards">
@@ -288,9 +297,6 @@
   {%- if cart.empty? -%}
     <p class="knr-cart-drawer__empty">{{ 'content.your_cart_is_empty' | t }}</p>
   {%- else -%}
-    <script src="{{ 'component-cart-items.js' | asset_url }}" type="module" fetchpriority="low"></script>
-    <script src="{{ 'component-cart-quantity-selector.js' | asset_url }}" type="module" fetchpriority="low"></script>
-
     <scroll-hint class="knr-cart-drawer__content" aria-label="{{ 'accessibility.cart' | t }}">
       <span class="visually-hidden" ref="cartItemCount" aria-hidden="true">{{ cart.item_count }}</span>
       <form action="{{ routes.cart_url }}" class="knr-cart-drawer__items" id="cart-form" method="post">
