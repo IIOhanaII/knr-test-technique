@@ -1,0 +1,1412 @@
+{%- comment -%}
+  KNR — Gamified cart drawer.
+
+  Tiers, samples list and gift product are merchant-administrable (blocks +
+  settings). Thresholds drive the progress bar; the actual "free" pricing is
+  enforced by native Shopify automatic discounts (free shipping + Buy X Get Y) —
+  the theme never manipulates prices. See spec for the required store setup.
+
+  Real-time: this whole section re-renders on cart mutations through the native
+  Sections Rendering API (cart-items-component data-section-id = section.id), so
+  the bar/messages/samples recompute server-side without a reload.
+
+  Visual layer is provisional pending the Figma mockup.
+{%- endcomment -%}
+
+{%- liquid
+  # --- Qualifying subtotal: sum of paid lines only (exclude free samples/gift) ---
+  assign qualifying = 0
+  assign selected_samples = 0
+  assign selected_sample_ids = ''
+  assign gift_in_cart = false
+  for item in cart.items
+    if item.properties._sample
+      assign selected_samples = selected_samples | plus: item.quantity
+      assign selected_sample_ids = selected_sample_ids | append: ',' | append: item.variant_id | append: ','
+      continue
+    endif
+    if item.properties._gift
+      assign gift_in_cart = true
+      continue
+    endif
+    assign qualifying = qualifying | plus: item.final_line_price
+  endfor
+
+  # --- Read tiers from blocks (merchant orders them ascending by threshold) ---
+  assign max_threshold = 0
+  assign samples_tier_cents = 0
+  assign samples_max_setting = 0
+  assign gift_tier_cents = 0
+  for block in section.blocks
+    assign t_cents = block.settings.threshold | times: 100
+    if t_cents > max_threshold
+      assign max_threshold = t_cents
+    endif
+    case block.settings.reward_type
+      when 'samples'
+        assign samples_tier_cents = t_cents
+        assign samples_max_setting = block.settings.samples_max
+      when 'gift'
+        assign gift_tier_cents = t_cents
+    endcase
+  endfor
+
+  # Avoid divide-by-zero when no tier is configured yet
+  assign bar_max = max_threshold
+  if bar_max == 0
+    assign bar_max = 1
+  endif
+
+  # Markers are evenly spaced; the fill interpolates within the current segment
+  # so the bar lands exactly on a marker the moment its threshold is reached.
+  assign tier_count = section.blocks.size
+  assign fill_percent = 100
+  assign prev_threshold = 0
+  assign prev_pos = 0
+  assign fill_found = false
+  for block in section.blocks
+    assign t_cents = block.settings.threshold | times: 100
+    assign marker_pos = forloop.index0 | times: 2 | plus: 1 | times: 50 | divided_by: tier_count
+    if fill_found == false and qualifying < t_cents
+      assign span = t_cents | minus: prev_threshold
+      if span <= 0
+        assign span = 1
+      endif
+      assign into = qualifying | minus: prev_threshold
+      assign delta = marker_pos | minus: prev_pos
+      assign fill_percent = delta | times: into | divided_by: span | plus: prev_pos
+      assign fill_found = true
+    endif
+    assign prev_threshold = t_cents
+    assign prev_pos = marker_pos
+  endfor
+
+  # Current allowances
+  assign samples_unlocked = false
+  if samples_tier_cents > 0 and qualifying >= samples_tier_cents
+    assign samples_unlocked = true
+  endif
+  assign samples_max = 0
+  if samples_unlocked
+    assign samples_max = samples_max_setting
+  endif
+
+  assign gift_product = section.settings.gift_product
+  assign gift_variant = gift_product.selected_or_first_available_variant
+  assign samples_collection = section.settings.samples_collection
+
+  # Samples module visibility + remaining empty slots (the footer card and the
+  # chooser overlay live in different places but share this guard).
+  assign show_samples = false
+  if samples_unlocked and samples_collection != blank and samples_collection.products.size > 0
+    assign show_samples = true
+  endif
+  assign empty_slots = samples_max | minus: selected_samples
+  if empty_slots < 0
+    assign empty_slots = 0
+  endif
+
+  # Progress aria value, in major currency units
+  assign aria_now = qualifying | divided_by: 100
+  assign aria_max = bar_max | divided_by: 100
+
+  # Placeholder tokens for the merchant-editable message. Kept in variables so the
+  # literal braces never sit inside a {{ }} output (the storefront Liquid lexer
+  # mis-terminates `replace: '{montant}'` on the inner `}`).
+  assign money_placeholder = '{montant}'
+  assign benefit_placeholder = '{avantage}'
+-%}
+
+<script src="{{ 'cart-drawer.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+{%- capture progress_markup -%}
+  <div class="knr-cart-rewards">
+    <div class="knr-cart-rewards__incentive">
+      {%- comment -%} Dynamic advancement message {%- endcomment -%}
+      {%- assign message_shown = false -%}
+      <p class="knr-cart-rewards__message" data-rewards-message>
+        {%- for block in section.blocks -%}
+          {%- assign t_cents = block.settings.threshold | times: 100 -%}
+          {%- if qualifying < t_cents and message_shown == false -%}
+            {%- assign remaining = t_cents | minus: qualifying | money_without_trailing_zeros -%}
+            {%- capture amount -%}<strong class="knr-cart-rewards__amount">{{ remaining }}</strong>{%- endcapture -%}
+            {%- capture benefit -%}<strong class="knr-cart-rewards__benefit">{{ block.settings.benefit }}</strong>{%- endcapture -%}
+            {%- assign message = block.settings.message_locked | replace: money_placeholder, amount | replace: benefit_placeholder, benefit -%}
+            {{- message -}}
+            {%- assign message_shown = true -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if message_shown == false -%}
+          {{- section.settings.message_all_unlocked -}}
+        {%- endif -%}
+      </p>
+
+      <div
+        class="knr-cart-rewards__progress"
+        role="progressbar"
+        aria-label="{{ 'accessibility.cart_progress' | t }}"
+        aria-valuemin="0"
+        aria-valuemax="{{ aria_max }}"
+        aria-valuenow="{{ aria_now }}"
+        style="--knr-fill: {{ fill_percent }}%;"
+      >
+        <span class="knr-cart-rewards__track" aria-hidden="true">
+          <span class="knr-cart-rewards__fill" data-rewards-fill></span>
+        </span>
+        <ul class="knr-cart-rewards__markers" role="list">
+          {%- for block in section.blocks -%}
+            {%- assign t_cents = block.settings.threshold | times: 100 -%}
+            {%- assign reached = false -%}
+            {%- if qualifying >= t_cents -%}{%- assign reached = true -%}{%- endif -%}
+            {%- case block.settings.reward_type -%}
+              {%- when 'samples' -%}{%- assign tier_icon = 'knr-icon-sample.svg' -%}
+              {%- when 'gift' -%}{%- assign tier_icon = 'knr-icon-gift.svg' -%}
+              {%- else -%}{%- assign tier_icon = 'knr-icon-truck.svg' -%}
+            {%- endcase -%}
+            <li
+              class="knr-cart-rewards__marker{% if reached %} is-reached{% endif %}"
+              {{ block.shopify_attributes }}
+            >
+              <span class="knr-cart-rewards__marker-icon">{{ tier_icon | inline_asset_content }}</span>
+              <span class="knr-cart-rewards__marker-label">{{ block.settings.label }}</span>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%}
+    Samples chooser — full-drawer overlay opened from the footer card. Its open
+    state lives on the stable <cart-drawer-component> so it survives the live
+    section re-render.
+  {%- endcomment -%}
+  {%- if show_samples -%}
+    <div
+      class="knr-cart-samples-screen"
+      data-samples-screen
+      role="dialog"
+      aria-modal="true"
+      aria-label="{{ 'content.cart_rewards.samples_heading' | t }}"
+    >
+      <div class="knr-cart-samples-screen__header">
+        <button
+          type="button"
+          class="knr-cart-samples-screen__back"
+          data-samples-close
+          aria-label="{{ 'accessibility.back' | t }}"
+        >
+          <span class="svg-wrapper">{{- 'knr-icon-arrow-left.svg' | inline_asset_content -}}</span>
+        </button>
+        <span class="knr-cart-samples-screen__title">{{ 'content.cart_rewards.samples_heading' | t }}</span>
+        <span class="knr-cart-samples-screen__counter" data-samples-counter>{{ selected_samples }}/{{ samples_max }}</span>
+      </div>
+
+      <ul class="knr-cart-samples-screen__grid" role="list">
+        {%- for product in samples_collection.products limit: 24 -%}
+          {%- assign variant = product.selected_or_first_available_variant -%}
+          {%- assign id_token = ',' | append: variant.id | append: ',' -%}
+          {%- assign is_selected = false -%}
+          {%- if selected_sample_ids contains id_token -%}{%- assign is_selected = true -%}{%- endif -%}
+          {%- assign disabled = false -%}
+          {%- if is_selected == false and selected_samples >= samples_max -%}{%- assign disabled = true -%}{%- endif -%}
+          <li
+            class="knr-cart-samples-screen__item{% if is_selected %} is-selected{% endif %}"
+            data-sample
+            data-variant-id="{{ variant.id }}"
+          >
+            <span class="knr-cart-samples-screen__media">
+              {%- if product.featured_image -%}
+                {{ product.featured_image | image_url: width: 334 | image_tag: loading: 'lazy', widths: '167,334', alt: product.featured_image.alt | default: product.title }}
+              {%- endif -%}
+            </span>
+            <div class="knr-cart-samples-screen__body">
+              <span class="knr-cart-samples-screen__name">{{ product.title }}</span>
+              {%- if variant.title and variant.title != 'Default Title' -%}
+                <span class="knr-cart-samples-screen__variant">{{ variant.title }}</span>
+              {%- endif -%}
+              <button
+                type="button"
+                class="knr-cart-samples-screen__toggle"
+                data-sample-toggle
+                aria-pressed="{{ is_selected }}"
+                {% if disabled %}disabled{% endif %}
+              >
+                {%- if is_selected -%}
+                  {{- 'content.cart_rewards.remove_sample' | t -}}
+                {%- else -%}
+                  {{- 'content.cart_rewards.add_sample' | t -}}
+                {%- endif -%}
+              </button>
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      <div class="knr-cart-samples-screen__footer">
+        <button type="button" class="knr-cart-samples-screen__validate" data-samples-close>
+          <span>{{ 'content.cart_rewards.validate' | t }}</span>
+          <span class="knr-cart-samples-screen__validate-count">{{ selected_samples }}/{{ samples_max }}</span>
+        </button>
+      </div>
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- capture cart_items_children -%}
+  <div class="knr-cart-drawer__header">
+    <h2 class="knr-cart-drawer__heading" id="knr-cart-drawer-heading">
+      <span class="knr-cart-drawer__heading-icon">
+        <span class="svg-wrapper">{{- 'knr-icon-bag.svg' | inline_asset_content -}}</span>
+        {% render 'cart-bubble' %}
+      </span>
+      {{ 'content.cart_rewards.drawer_title' | t }}
+    </h2>
+    <button
+      ref="closeButton"
+      on:click="#knr-cart-drawer/close"
+      class="knr-cart-drawer__close button-unstyled"
+      aria-label="{{ 'actions.close_dialog' | t }}"
+    >
+      <span class="svg-wrapper">{{- 'knr-icon-close.svg' | inline_asset_content -}}</span>
+    </button>
+  </div>
+
+  <knr-cart-rewards
+    class="knr-cart-rewards-root"
+    data-qualifying="{{ qualifying }}"
+    data-samples-max="{{ samples_max }}"
+    data-samples-tier="{{ samples_tier_cents }}"
+    data-selected-samples="{{ selected_samples }}"
+    data-gift-tier="{{ gift_tier_cents }}"
+    data-gift-variant="{{ gift_variant.id }}"
+    data-gift-in-cart="{{ gift_in_cart }}"
+  >
+    {{ progress_markup }}
+  </knr-cart-rewards>
+
+  {%- if cart.empty? -%}
+    <p class="knr-cart-drawer__empty">{{ 'content.your_cart_is_empty' | t }}</p>
+  {%- else -%}
+    <script src="{{ 'component-cart-items.js' | asset_url }}" type="module" fetchpriority="low"></script>
+    <script src="{{ 'component-cart-quantity-selector.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+    <scroll-hint class="knr-cart-drawer__content" aria-label="{{ 'accessibility.cart' | t }}">
+      <span class="visually-hidden" ref="cartItemCount" aria-hidden="true">{{ cart.item_count }}</span>
+      <form action="{{ routes.cart_url }}" class="knr-cart-drawer__items" id="cart-form" method="post">
+        <ul class="knr-cart-lines" role="list">
+          {%- for item in cart.items -%}
+            {%- comment -%} Samples never appear as lines — only as thumbnails in the samples card. {%- endcomment -%}
+            {%- if item.properties._sample -%}{%- continue -%}{%- endif -%}
+            {%- liquid
+              assign is_gift = false
+              if item.properties._gift
+                assign is_gift = true
+              endif
+              assign line = item.index | plus: 1
+              assign can_update = item.instructions.can_update_quantity | default: true, allow_false: true
+            -%}
+            <li
+              class="knr-cart-line{% if is_gift %} knr-cart-line--free{% endif %}"
+              ref="cartItemRows[]"
+              data-key="{{ item.key }}"
+              data-parent-key="{{ item.parent_relationship.parent.key }}"
+              {% if is_gift %}data-gift-line{% endif %}
+            >
+              <a href="{{ item.url }}" class="knr-cart-line__media" tabindex="-1" aria-hidden="true">
+                {%- if item.image -%}
+                  {{ item.image | image_url: width: 296 | image_tag: loading: 'lazy', widths: '148,296', alt: item.title }}
+                {%- endif -%}
+              </a>
+              <div class="knr-cart-line__body">
+                <div class="knr-cart-line__top">
+                  {%- comment -%} Reviews are a static mockup placeholder (no native review data). {%- endcomment -%}
+                  <span class="knr-cart-line__review">
+                    <span class="knr-cart-line__stars" aria-hidden="true">
+                      {%- for i in (1..5) -%}
+                        {%- if i <= 4 -%}
+                          <span class="svg-wrapper knr-cart-line__star">{{- 'knr-icon-star.svg' | inline_asset_content -}}</span>
+                        {%- else -%}
+                          <span class="svg-wrapper knr-cart-line__star knr-cart-line__star--empty">{{- 'knr-icon-star-empty.svg' | inline_asset_content -}}</span>
+                        {%- endif -%}
+                      {%- endfor -%}
+                    </span>
+                    <span class="knr-cart-line__avis">{{ 'content.cart_rewards.reviews_count' | t: count: 132 }}</span>
+                  </span>
+                  <span class="knr-cart-line__price">
+                    {%- if is_gift -%}
+                      {{- 'content.cart_rewards.free_badge' | t -}}
+                    {%- else -%}
+                      {{- item.final_line_price | money_without_trailing_zeros -}}
+                    {%- endif -%}
+                  </span>
+                </div>
+                <div class="knr-cart-line__info">
+                  <a href="{{ item.url }}" class="knr-cart-line__title">{{ item.product.title }}</a>
+                  {%- if item.variant.title and item.variant.title != 'Default Title' -%}
+                    <span class="knr-cart-line__variant">{{ item.variant.title }}</span>
+                  {%- endif -%}
+                </div>
+                <div class="knr-cart-line__actions{% if is_gift %} knr-cart-line__actions--gift{% endif %}">
+                  {%- unless is_gift -%}
+                    {% render 'quantity-selector',
+                      product: item.product,
+                      variant: item.variant,
+                      in_cart_quantity: item.quantity,
+                      line_index: item.index,
+                      can_update_quantity: can_update
+                    %}
+                  {%- endunless -%}
+                  <button
+                    type="button"
+                    class="knr-cart-line__remove button-unstyled"
+                    data-line-remove
+                    aria-label="{{ 'accessibility.remove_item' | t: title: item.title | escape }}"
+                  >
+                    {{- 'content.cart_rewards.remove' | t -}}
+                  </button>
+                </div>
+                <div class="knr-cart-line__error hidden" role="alert" ref="cartItemErrorContainer-{{ line }}">
+                  <small class="knr-cart-line__error-text" ref="cartItemError-{{ line }}"></small>
+                </div>
+              </div>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </form>
+    </scroll-hint>
+
+    <div class="knr-cart-drawer__footer">
+      {%- if show_samples -%}
+        <div class="knr-cart-samples" data-samples-module>
+          <div class="knr-cart-samples__card">
+            <div class="knr-cart-samples__head">
+              <p class="knr-cart-samples__title">{{ section.settings.samples_title }}</p>
+              <p class="knr-cart-samples__subtitle">
+                {{- 'content.cart_rewards.samples_available' | t: count: samples_max -}}
+              </p>
+            </div>
+            <div class="knr-cart-samples__row">
+              <ul class="knr-cart-samples__slots" role="list">
+                {%- for item in cart.items -%}
+                  {%- if item.properties._sample -%}
+                    <li class="knr-cart-samples__slot is-filled">
+                      {%- if item.image -%}
+                        {{ item.image | image_url: width: 96 | image_tag: loading: 'lazy', widths: '32,64,96', alt: item.title }}
+                      {%- endif -%}
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- for i in (1..empty_slots) -%}
+                  <li class="knr-cart-samples__slot" aria-hidden="true">
+                    <span class="svg-wrapper">{{- 'icon-plus.svg' | inline_asset_content -}}</span>
+                  </li>
+                {%- endfor -%}
+              </ul>
+              <button type="button" class="knr-cart-samples__cta" data-samples-open>
+                {%- if selected_samples > 0 -%}
+                  {{- 'content.cart_rewards.modify' | t -}}
+                {%- else -%}
+                  {{- 'content.cart_rewards.choose' | t -}}
+                {%- endif -%}
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+      <a href="{{ routes.cart_url }}" class="knr-cart-drawer__cta">
+        <span class="knr-cart-drawer__cta-label">{{ 'content.cart_rewards.view_cart' | t }}</span>
+        <span class="knr-cart-drawer__cta-price">
+          <span class="knr-cart-drawer__cta-sep" aria-hidden="true"></span>
+          <span class="knr-cart-drawer__cta-total">{{ cart.total_price | money }}</span>
+        </span>
+      </a>
+      <p class="knr-cart-drawer__legal">{{ 'content.cart_rewards.legal_note' | t }}</p>
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+
+<cart-drawer-component
+  id="knr-cart-drawer"
+  class="knr-cart-drawer"
+  {% if settings.auto_open_cart_drawer %}auto-open{% endif %}
+  {{ section.shopify_attributes }}
+>
+  <dialog
+    ref="dialog"
+    class="knr-cart-drawer__dialog dialog-modal dialog-drawer color-{{ settings.drawer_color_scheme }}{% if cart.empty? %} knr-cart-drawer--empty{% endif %}"
+    aria-labelledby="knr-cart-drawer-heading"
+    scroll-lock
+  >
+    <span ref="liveRegion" class="visually-hidden" role="status"></span>
+    <div class="knr-cart-drawer__inner" data-hydration-key="knr-cart-drawer-inner">
+      {% render 'cart-items-component', children: cart_items_children, is_drawer: true, section_id: section.id %}
+    </div>
+  </dialog>
+</cart-drawer-component>
+
+<script src="{{ 'knr-cart-rewards.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+{% stylesheet %}
+  /* Drawer maquette palette — no theme-token equivalent, declared once here. */
+  .knr-cart-drawer {
+    --knr-cd-incentive-bg: #f6f8f4;
+    --knr-cd-bar-fill: #dcd7ca;
+    --knr-cd-bar-track: #f5f5f5;
+    --knr-cd-marker-active: #d7d2c5;
+    --knr-cd-marker-inactive: #f6f8f4;
+    --knr-cd-marker-border: #d6d1c4;
+    --knr-cd-hairline: #f5f5f5;
+    --knr-cd-border: #c8c8c8;
+    --knr-cd-muted: #717171;
+  }
+
+  /* Full-height drawer anchored right (500px from tablet up), no padding —
+     same positioning model as the native cart drawer. */
+  .knr-cart-drawer__dialog {
+    position: fixed;
+    overflow: hidden;
+    inline-size: min(100vw, 31.25rem);
+    block-size: 100%;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: var(--shadow-drawer);
+    background-color: var(--color-background);
+  }
+
+  .knr-cart-drawer__dialog:modal {
+    max-block-size: 100dvh;
+  }
+
+  .knr-cart-drawer__inner {
+    block-size: 100%;
+    overflow: hidden;
+  }
+
+  /* Rewards controller wraps the progress bar + chooser overlay at the top; the
+     samples card itself lives in the footer (events are delegated from the
+     drawer), so natural DOM order already gives header · progress · items ·
+     footer(card + CTA). */
+  .knr-cart-rewards-root {
+    display: block;
+  }
+
+  /* Header and rewards stay fixed; the item list scrolls; the footer sticks. */
+  .knr-cart-drawer .knr-cart-drawer__content {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+  }
+
+  .knr-cart-drawer__items {
+    display: block;
+  }
+
+  /* White frame around the green incentive card. */
+  .knr-cart-rewards {
+    padding: var(--knr-space-4);
+    border-block-end: 1px solid var(--knr-cd-hairline);
+  }
+
+  .knr-cart-rewards__incentive {
+    display: grid;
+    gap: var(--knr-space-5); /* 20px */
+    padding: var(--knr-space-4);
+    background: var(--knr-cd-incentive-bg);
+  }
+
+  .knr-cart-rewards__benefit {
+    font-weight: 600;
+  }
+
+  .knr-cart-rewards__message {
+    margin: 0;
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333;
+    text-align: center;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-rewards__amount {
+    font-weight: 700;
+  }
+
+  .knr-cart-rewards__progress {
+    position: relative;
+  }
+
+  /* 4px line centred on the marker icons (30px icon → centre at 15px). */
+  .knr-cart-rewards__track {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0.8125rem; /* 13px = 15px icon centre − 2px half-track */
+    block-size: 0.25rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    background: var(--knr-cd-bar-track);
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.05);
+  }
+
+  .knr-cart-rewards__fill {
+    display: block;
+    block-size: 100%;
+    inline-size: var(--knr-fill, 0%);
+    border-radius: inherit;
+    background: var(--knr-cd-bar-fill);
+    transition: inline-size 0.4s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-cart-rewards__fill {
+      transition: none;
+    }
+  }
+
+  .knr-cart-rewards__markers {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .knr-cart-rewards__marker {
+    flex: 1 0 0;
+    display: grid;
+    justify-items: center;
+    column-gap: var(--knr-space-2);
+    text-align: center;
+  }
+
+  /* 30px circle / 20px icon, matching Figma (5px optical inset comes from the
+     size difference, the icon is centred — no padding needed). */
+  .knr-cart-rewards__marker-icon {
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    inline-size: 1.875rem; /* 30px */
+    block-size: 1.875rem;
+    border: 1px solid var(--knr-cd-marker-border);
+    border-radius: 50%;
+    background: var(--knr-cd-marker-inactive);
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-rewards__marker-icon svg {
+    display: block;
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+  }
+
+  .knr-cart-rewards__marker.is-reached .knr-cart-rewards__marker-icon {
+    background: var(--knr-cd-marker-active);
+  }
+
+  .knr-cart-rewards__marker-label {
+    font-size: 0.625rem; /* 10px */
+    line-height: 1.4;
+    color: var(--knr-color-black);
+  }
+
+  /* Samples card — rendered inside the footer, above the CTA. The footer owns
+     the divider and outer spacing, so the wrapper itself stays bare. */
+  .knr-cart-samples {
+    inline-size: 100%;
+    padding-block-start: var(--knr-space-2); /* +8px → 16px above the card with the footer's top padding */
+  }
+
+  .knr-cart-samples__card {
+    display: grid;
+    gap: var(--knr-space-4);
+    padding: var(--knr-space-5); /* 20px */
+    background: var(--knr-cd-incentive-bg);
+  }
+
+  .knr-cart-samples__head {
+    display: grid;
+    gap: 0.0625rem; /* 1px */
+  }
+
+  .knr-cart-samples__title {
+    margin: 0;
+    font-size: var(--knr-text-base); /* 14px */
+    font-weight: 500;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples__subtitle {
+    margin: 0;
+    font-size: 0.625rem; /* 10px */
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem; /* 10px */
+  }
+
+  .knr-cart-samples__slots {
+    display: flex;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .knr-cart-samples__slot {
+    display: grid;
+    place-items: center;
+    inline-size: 2rem; /* 32px */
+    block-size: 2rem;
+    background: var(--knr-color-white);
+    border: 1px dashed var(--knr-cd-border);
+    color: var(--knr-cd-muted);
+    overflow: hidden;
+  }
+
+  .knr-cart-samples__slot .svg-wrapper {
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples__slot svg {
+    inline-size: 0.5rem; /* 8px */
+    block-size: 0.5rem;
+  }
+
+  .knr-cart-samples__slot.is-filled {
+    border-style: solid;
+    border-color: var(--knr-cd-hairline);
+  }
+
+  .knr-cart-samples__slot img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .knr-cart-samples__cta {
+    flex: 0 0 auto;
+    padding: var(--knr-space-2) var(--knr-space-6); /* 8px / 24px */
+    background: var(--knr-color-white);
+    border: 1px solid var(--knr-cd-border);
+    font-size: var(--knr-text-sm); /* 12px */
+    font-weight: 500;
+    color: var(--knr-color-black);
+    cursor: pointer;
+  }
+
+  /* Full-drawer sample chooser overlay */
+  .knr-cart-samples-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    background: var(--knr-color-white);
+  }
+
+  .knr-cart-drawer.is-choosing-samples .knr-cart-samples-screen {
+    display: flex;
+  }
+
+  .knr-cart-samples-screen__header {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-3); /* 12px */
+    padding: var(--knr-space-4); /* 16px */
+    background: var(--knr-cd-incentive-bg);
+    border-block-end: 1px solid var(--knr-cd-border);
+  }
+
+  .knr-cart-samples-screen__back {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--knr-color-black);
+    cursor: pointer;
+  }
+
+  /* 44px tap target (WCAG 2.5.5) with no visible box, matching the mockup. */
+  .knr-cart-samples-screen__back::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    transform: translate(-50%, -50%);
+  }
+
+  .knr-cart-samples-screen__back svg {
+    inline-size: 0.875rem; /* 14px (arrow viewBox is 15.5 × 11.69) */
+    block-size: auto;
+  }
+
+  .knr-cart-samples-screen__title {
+    flex: 1 0 auto;
+    font-size: var(--knr-text-base); /* 14px */
+    line-height: 1.4286; /* 20px */
+    font-weight: 500;
+  }
+
+  .knr-cart-samples-screen__counter {
+    font-size: var(--knr-text-base); /* 14px */
+    font-weight: 500;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples-screen__grid {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-inline-start: 1px solid var(--knr-cd-border);
+    scrollbar-width: none; /* hidden per mockup; the fade below hints scrolling */
+  }
+
+  .knr-cart-samples-screen__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Tiles carry their right border (the grid adds the left). Horizontal rules
+     come from the top border of rows 2+, so the LAST row has no bottom border
+     and won't double the footer divider. The header's bottom border closes the top. */
+  .knr-cart-samples-screen__item {
+    display: flex;
+    flex-direction: column;
+    border-inline-end: 1px solid var(--knr-cd-border);
+  }
+
+  .knr-cart-samples-screen__item:nth-child(n + 4) {
+    border-block-start: 1px solid var(--knr-cd-border);
+  }
+
+  .knr-cart-samples-screen__media {
+    position: relative;
+    aspect-ratio: 6 / 7; /* 166.67 × 194.44 */
+    background: var(--knr-color-white);
+    overflow: hidden;
+  }
+
+  .knr-cart-samples-screen__media img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  /* Loading micro-interaction while a sample add/remove round-trips. */
+  .knr-cart-samples-screen__item.is-loading {
+    pointer-events: none;
+  }
+
+  .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgb(255 255 255 / 0.6);
+  }
+
+  .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    z-index: 2;
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+    margin-block-start: -0.625rem;
+    margin-inline-start: -0.625rem;
+    border: 2px solid var(--knr-cd-border);
+    border-block-start-color: var(--knr-color-black);
+    border-radius: 50%;
+    animation: knr-cart-spin 0.6s linear infinite;
+  }
+
+  @keyframes knr-cart-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::after,
+    .knr-cart-line.is-loading::after {
+      animation-duration: 1.5s;
+    }
+  }
+
+  .knr-cart-samples-screen__body {
+    display: grid;
+    gap: var(--knr-space-1); /* 4px */
+    padding: var(--knr-space-2) var(--knr-space-3) var(--knr-space-3); /* 8 / 12 / 12 */
+  }
+
+  .knr-cart-samples-screen__name {
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333; /* 16px */
+    font-weight: 500;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples-screen__variant {
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333; /* 16px */
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-samples-screen__toggle {
+    justify-self: start;
+    margin-block-start: var(--knr-space-3); /* 12px → 16px total gap to the text block */
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: var(--knr-text-sm); /* 12px */
+    font-weight: 500;
+    color: var(--knr-color-black);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .knr-cart-samples-screen__toggle:disabled {
+    color: var(--knr-cd-muted);
+    text-decoration: none;
+    cursor: not-allowed;
+  }
+
+  .knr-cart-samples-screen__footer {
+    position: relative;
+    padding: var(--knr-space-4); /* 16px */
+    border-block-start: 1px solid var(--knr-cd-border);
+  }
+
+  /* Scrollbar is hidden, so a subtle fade above the footer signals more samples. */
+  .knr-cart-samples-screen__footer::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 100%;
+    block-size: 2.5rem; /* 40px */
+    background: linear-gradient(to top, rgb(0 0 0 / 0.06), transparent);
+    pointer-events: none;
+  }
+
+  .knr-cart-samples-screen__validate {
+    inline-size: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--knr-space-2);
+    padding: var(--knr-space-3) 1.75rem; /* 12px / 28px (28px = no scale token) */
+    background: var(--knr-color-black);
+    border: 1.2px solid var(--knr-color-black);
+    font-size: var(--knr-text-base); /* 14px */
+    font-weight: 500;
+    color: var(--knr-color-white);
+    cursor: pointer;
+  }
+
+  .knr-cart-samples-screen__validate-count {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--knr-space-2); /* 8px */
+    color: var(--knr-cd-bar-track); /* #f5f5f5 */
+    text-transform: uppercase;
+  }
+
+  .knr-cart-samples-screen__validate-count::before {
+    content: '';
+    inline-size: 1px;
+    block-size: 0.6875rem; /* 11px */
+    background: currentcolor;
+  }
+
+  .knr-cart-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--knr-space-3);
+    padding: var(--knr-space-4) var(--knr-space-6); /* 16px / 24px */
+    border-block-end: 1px solid var(--knr-cd-border);
+  }
+
+  .knr-cart-drawer__heading {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-3);
+    margin: 0;
+    font-size: var(--knr-text-md); /* 16px */
+    font-weight: 500;
+  }
+
+  .knr-cart-drawer__heading-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .knr-cart-drawer__heading-icon .svg-wrapper,
+  .knr-cart-drawer__heading-icon svg {
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+    color: var(--knr-color-black);
+  }
+
+  /* Count badge over the bag, per mockup (sand fill, thin black ring).
+     14px badge overhanging the 20px bag: 3px above, 6px past the right edge. */
+  .knr-cart-drawer__heading-icon .cart-bubble {
+    position: absolute;
+    inset-block-start: -0.1875rem; /* -3px */
+    inset-inline-end: -0.375rem; /* -6px */
+    inline-size: 0.875rem; /* 14px */
+    block-size: 0.875rem;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-drawer__heading-icon .cart-bubble__background {
+    background-color: var(--knr-cd-bar-fill);
+    border: 1.2px solid var(--knr-color-black);
+    border-radius: 50%;
+  }
+
+  .knr-cart-drawer__heading-icon .cart-bubble__text {
+    font-size: 0.625rem; /* 10px */
+    font-weight: 500;
+  }
+
+  .knr-cart-drawer__close {
+    display: grid;
+    place-items: center;
+    padding: var(--knr-space-1);
+    color: var(--knr-color-black);
+    cursor: pointer;
+  }
+
+  .knr-cart-drawer__close .svg-wrapper,
+  .knr-cart-drawer__close svg {
+    inline-size: 0.75rem; /* 12px */
+    block-size: 0.75rem;
+  }
+
+  .knr-cart-drawer__empty {
+    padding: var(--knr-space-8) var(--knr-space-4);
+    text-align: center;
+  }
+
+  /* --- Line items (custom layout faithful to the mockup) --- */
+  .knr-cart-lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .knr-cart-line {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2); /* 8px */
+    padding-inline: var(--knr-space-4);
+    border-block-end: 1px solid var(--knr-cd-hairline);
+  }
+
+  .knr-cart-line:last-child {
+    border-block-end: none;
+  }
+
+  /* Loading state while a line is being removed (the drawer stays open). */
+  .knr-cart-line.is-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  .knr-cart-line.is-loading::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 1rem;
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+    margin-block-start: -0.625rem;
+    border: 2px solid var(--knr-cd-border);
+    border-block-start-color: var(--knr-color-black);
+    border-radius: 50%;
+    animation: knr-cart-spin 0.6s linear infinite;
+  }
+
+  /* One-shot reveal when the free gift line is auto-added at the threshold. */
+  .knr-cart-line.is-revealed {
+    animation: knr-gift-reveal 0.8s ease;
+  }
+
+  @keyframes knr-gift-reveal {
+    from {
+      opacity: 0.4;
+      background-color: var(--knr-cd-incentive-bg);
+    }
+
+    to {
+      opacity: 1;
+      background-color: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-cart-line.is-revealed {
+      animation: none;
+    }
+  }
+
+  .knr-cart-line__media {
+    flex: 0 0 auto;
+    inline-size: 6.25rem; /* 100px */
+    aspect-ratio: 296 / 345;
+    padding-block: var(--knr-space-4);
+    padding-left: var(--knr-space-2);
+  }
+
+  .knr-cart-line__media img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+  }
+
+  .knr-cart-line__body {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: grid;
+    gap: var(--knr-space-1); /* 4px */
+    padding-block: var(--knr-space-5); /* 20px */
+    padding-inline-start: var(--knr-space-5); /* 20px */
+  }
+
+  .knr-cart-line__top {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2);
+  }
+
+  .knr-cart-line__review {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-1); /* 4px */
+  }
+
+  .knr-cart-line__stars {
+    display: inline-flex;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__star {
+    inline-size: 0.625rem; /* 10px */
+    block-size: 0.625rem;
+  }
+
+  .knr-cart-line__star--empty {
+    color: var(--knr-cd-border);
+  }
+
+  .knr-cart-line__star svg {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .knr-cart-line__avis {
+    font-size: 0.625rem; /* 10px */
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__price {
+    flex: 0 0 auto;
+    font-size: var(--knr-text-sm); /* 12px */
+    font-weight: 500;
+    line-height: 1.333;
+    text-transform: uppercase; /* "Offert" → "OFFERT"; prices are digits, unaffected */
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__info {
+    display: grid;
+    gap: var(--knr-space-1); /* 4px */
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333;
+  }
+
+  .knr-cart-line__title {
+    font-weight: 500;
+    color: var(--knr-color-black);
+    text-decoration: none;
+  }
+
+  .knr-cart-line__variant {
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--knr-space-2);
+    margin-top: var(--knr-space-2);
+  }
+
+  /* Gift line has no quantity stepper — keep "Supprimer" aligned right. */
+  .knr-cart-line__actions--gift {
+    justify-content: flex-end;
+  }
+
+  /* Quantity stepper, matching the mockup: 81×28 bordered box, 8px inner
+     padding (4px block), 8px between each element. The +/- glyphs stay 12px
+     but each button extends to a 44px tap target (WCAG 2.5.5) via an invisible
+     overlay that overflows the compact box without disturbing its layout. */
+  .knr-cart-line__actions .quantity-selector {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2); /* 8px */
+    inline-size: 5.0625rem; /* 81px */
+    block-size: 1.75rem; /* 28px */
+    padding-block: var(--knr-space-1); /* 4px */
+    padding-inline: var(--knr-space-2); /* 8px */
+    border: 1px solid var(--knr-cd-hairline);
+    border-radius: 0;
+  }
+
+  .knr-cart-line__actions .quantity-selector .button {
+    position: relative;
+    flex: 0 0 1rem; /* 16px */
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__actions .quantity-selector .button::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: 2.75rem; /* 44px tap target */
+    block-size: 2.75rem;
+    transform: translate(-50%, -50%);
+  }
+
+  .knr-cart-line__actions .quantity-selector .button:disabled {
+    color: var(--knr-cd-border);
+    cursor: default;
+  }
+
+  .knr-cart-line__actions .quantity-selector .button .svg-wrapper,
+  .knr-cart-line__actions .quantity-selector .button svg {
+    inline-size: 0.75rem; /* 12px */
+    block-size: 0.75rem;
+  }
+
+  .knr-cart-line__actions .quantity-selector input {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    inline-size: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: center;
+    font-size: var(--knr-text-base); /* 14px */
+    color: var(--knr-color-black);
+  }
+
+  .knr-cart-line__remove {
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333;
+    color: var(--knr-cd-muted);
+    cursor: pointer;
+  }
+
+  .knr-cart-line__error {
+    display: flex;
+    font-size: var(--knr-text-sm);
+    color: var(--color-error, #c00);
+  }
+
+  .knr-cart-line__error.hidden {
+    display: none;
+  }
+
+  /* Sticky bottom: divider + full-width CTA to the cart page + legal note. */
+  .knr-cart-drawer__footer {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--knr-space-2); /* 8px */
+    padding: var(--knr-space-2) var(--knr-space-4) 0.625rem; /* 8 / 16 / 10 (10px = no scale token) */
+    border-block-start: 1px solid var(--knr-cd-hairline);
+  }
+
+  .knr-cart-drawer__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--knr-space-2); /* 8px */
+    padding: var(--knr-space-3) 1.75rem; /* 12px / 28px (28px = no scale token) */
+    background: var(--knr-color-black);
+    border: 1.2px solid var(--knr-color-black);
+    color: var(--knr-color-white);
+    font-size: var(--knr-text-base); /* 14px */
+    font-weight: 500;
+    line-height: 1.4286;
+    text-decoration: none;
+  }
+
+  .knr-cart-drawer__cta-price {
+    display: flex;
+    align-items: center;
+    gap: var(--knr-space-2); /* 8px */
+  }
+
+  .knr-cart-drawer__cta-sep {
+    inline-size: 1px;
+    block-size: 0.6875rem; /* 11px */
+    background: var(--knr-cd-bar-track);
+  }
+
+  .knr-cart-drawer__cta-total {
+    color: var(--knr-cd-bar-track); /* #f5f5f5 */
+  }
+
+  .knr-cart-drawer__legal {
+    margin: 0;
+    font-size: 0.625rem; /* 10px */
+    line-height: 1.4;
+    text-align: center;
+    color: var(--knr-cd-muted);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.cart_drawer",
+  "tag": "section",
+  "class": "knr-section knr-cart-drawer-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:info.cart_rewards_intro"
+    },
+    {
+      "type": "header",
+      "content": "t:content.samples"
+    },
+    {
+      "type": "collection",
+      "id": "samples_collection",
+      "label": "t:settings.samples_collection",
+      "info": "t:info.samples_collection"
+    },
+    {
+      "type": "text",
+      "id": "samples_title",
+      "label": "t:settings.samples_title",
+      "default": "Choisissez vos échantillons offerts"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_product"
+    },
+    {
+      "type": "product",
+      "id": "gift_product",
+      "label": "t:settings.gift_product",
+      "info": "t:info.gift_product"
+    },
+    {
+      "type": "header",
+      "content": "t:content.messages"
+    },
+    {
+      "type": "text",
+      "id": "message_all_unlocked",
+      "label": "t:settings.message_all_unlocked",
+      "default": "Bravo, vous bénéficiez de tous vos cadeaux !"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tier",
+      "name": "t:names.cart_tier",
+      "settings": [
+        {
+          "type": "number",
+          "id": "threshold",
+          "label": "t:settings.tier_threshold",
+          "info": "t:info.tier_threshold"
+        },
+        {
+          "type": "select",
+          "id": "reward_type",
+          "label": "t:settings.reward_type",
+          "options": [
+            { "value": "shipping", "label": "t:options.reward_shipping" },
+            { "value": "samples", "label": "t:options.reward_samples" },
+            { "value": "gift", "label": "t:options.reward_gift" }
+          ],
+          "default": "shipping"
+        },
+        {
+          "type": "number",
+          "id": "samples_max",
+          "label": "t:settings.samples_max",
+          "info": "t:info.samples_max",
+          "default": 3
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "t:settings.tier_label",
+          "info": "t:info.tier_label"
+        },
+        {
+          "type": "text",
+          "id": "message_locked",
+          "label": "t:settings.message_locked",
+          "info": "t:info.message_locked"
+        },
+        {
+          "type": "text",
+          "id": "benefit",
+          "label": "t:settings.tier_benefit",
+          "info": "t:info.tier_benefit"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "t:names.cart_drawer",
+      "blocks": [
+        { "type": "tier", "settings": { "threshold": 50, "reward_type": "shipping", "label": "Livraison offerte", "message_locked": "Plus que {montant} pour bénéficier de {avantage}", "benefit": "la livraison offerte" } },
+        { "type": "tier", "settings": { "threshold": 75, "reward_type": "samples", "samples_max": 3, "label": "3 échantillons offert", "message_locked": "Plus que {montant} pour bénéficier de {avantage}", "benefit": "3 échantillons offerts" } },
+        { "type": "tier", "settings": { "threshold": 100, "reward_type": "gift", "label": "1 produit offert", "message_locked": "Plus que {montant} pour bénéficier de {avantage}", "benefit": "votre produit offert" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

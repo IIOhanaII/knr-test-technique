@@ -86,10 +86,16 @@
     {%- endif -%}
 
     <cart-icon class="knr-header__action knr-header__action--cart">
-      <a href="{{ routes.cart_url }}" aria-label="{{ 'accessibility.cart' | t }}">
+      <button
+        type="button"
+        class="knr-header__cart-button button-unstyled"
+        on:click="#knr-cart-drawer/open"
+        aria-haspopup="dialog"
+        aria-label="{{ 'accessibility.cart' | t }}"
+      >
         {{- 'knr-icon-shopping-bag.svg' | inline_asset_content -}}
         {%- render 'cart-bubble', limit: 100 -%}
-      </a>
+      </button>
     </cart-icon>
 
     {%- if section.settings.show_burger -%}
@@ -202,11 +208,12 @@
     height: var(--knr-header-icon-size);
   }
 
-  .knr-header__action--cart > a {
+  .knr-header__cart-button {
     display: inline-flex;
     width: 100%;
     height: 100%;
     color: inherit;
+    cursor: pointer;
   }
 
   .knr-header .cart-bubble {
@@ -282,9 +289,12 @@
 
 {% javascript %}
   /* Keep the cart bubble count in sync live (add-to-cart, quantity changes).
-     The KNR layout has no cart-drawer, so we update the bubble directly from
-     the cart:update event (authoritative cart in event.detail.resource, with
-     a /cart.js fallback) instead of relying on drawer-driven re-rendering. */
+     The native cart-icon also writes this bubble, but it *increments* from the
+     rendered text and can land on NaN (empty bubble) when it reads a value a
+     racing handler just blanked. We set the authoritative absolute count from
+     the event's cart, deferred to a microtask so it runs after the native
+     synchronous handler and always wins (a /cart.js fallback covers events that
+     carry no cart payload). */
   (function () {
     function setCount(count) {
       document.querySelectorAll('.knr-header .cart-bubble').forEach(function (bubble) {
@@ -306,11 +316,11 @@
 
     document.addEventListener('cart:update', function (event) {
       var cart = event.detail && event.detail.resource;
-      if (cart && typeof cart.item_count === 'number') {
-        setCount(cart.item_count);
-      } else {
-        refreshFromServer();
-      }
+      var count = cart && typeof cart.item_count === 'number' ? cart.item_count : null;
+      queueMicrotask(function () {
+        if (count === null) refreshFromServer();
+        else setCount(count);
+      });
     });
   })();
 {% endjavascript %}

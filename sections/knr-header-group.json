@@ -43,10 +43,56 @@
         "show_search": true,
         "show_burger": true
       }
+    },
+    "knr-cart-drawer": {
+      "type": "knr-cart-drawer",
+      "blocks": {
+        "tier-shipping": {
+          "type": "tier",
+          "settings": {
+            "threshold": 50,
+            "reward_type": "shipping",
+            "label": "Livraison offerte",
+            "message_locked": "Plus que {montant} pour bénéficier de {avantage}",
+            "benefit": "la livraison offerte"
+          }
+        },
+        "tier-samples": {
+          "type": "tier",
+          "settings": {
+            "threshold": 75,
+            "reward_type": "samples",
+            "samples_max": 3,
+            "label": "3 échantillons offerts",
+            "message_locked": "Plus que {montant} pour bénéficier de {avantage}",
+            "benefit": "3 échantillons offerts"
+          }
+        },
+        "tier-gift": {
+          "type": "tier",
+          "settings": {
+            "threshold": 100,
+            "reward_type": "gift",
+            "label": "1 produit offert",
+            "message_locked": "Plus que {montant} pour bénéficier de {avantage}",
+            "benefit": "votre produit offert"
+          }
+        }
+      },
+      "block_order": [
+        "tier-shipping",
+        "tier-samples",
+        "tier-gift"
+      ],
+      "settings": {
+        "samples_title": "Choisissez vos échantillons offerts",
+        "message_all_unlocked": "Bravo, vous bénéficiez de tous vos cadeaux !"
+      }
     }
   },
   "order": [
     "knr-announcement",
-    "knr-header"
+    "knr-header",
+    "knr-cart-drawer"
   ]
 }
