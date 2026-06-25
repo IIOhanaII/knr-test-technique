@@ -100,6 +100,17 @@
   assign gift_variant = gift_product.selected_or_first_available_variant
   assign samples_collection = section.settings.samples_collection
 
+  # Samples module visibility + remaining empty slots (the footer card and the
+  # chooser overlay live in different places but share this guard).
+  assign show_samples = false
+  if samples_unlocked and samples_collection != blank and samples_collection.products.size > 0
+    assign show_samples = true
+  endif
+  assign empty_slots = samples_max | minus: selected_samples
+  if empty_slots < 0
+    assign empty_slots = 0
+  endif
+
   # Progress aria value, in major currency units
   assign aria_now = qualifying | divided_by: 100
   assign aria_max = bar_max | divided_by: 100
@@ -171,50 +182,11 @@
   </div>
 
   {%- comment -%}
-    Samples module — only once the samples tier is unlocked. Footer card (slots +
-    Choisir/Modifier) opens a full-drawer chooser overlay whose open state lives on
-    the stable <cart-drawer-component> so it survives the live section re-render.
+    Samples chooser — full-drawer overlay opened from the footer card. Its open
+    state lives on the stable <cart-drawer-component> so it survives the live
+    section re-render.
   {%- endcomment -%}
-  {%- if samples_unlocked and samples_collection != blank and samples_collection.products.size > 0 -%}
-    {%- assign empty_slots = samples_max | minus: selected_samples -%}
-    {%- if empty_slots < 0 -%}{%- assign empty_slots = 0 -%}{%- endif -%}
-
-    <div class="knr-cart-samples" data-samples-module>
-      <div class="knr-cart-samples__card">
-        <div class="knr-cart-samples__head">
-          <p class="knr-cart-samples__title">{{ section.settings.samples_title }}</p>
-          <p class="knr-cart-samples__subtitle">
-            {{- 'content.cart_rewards.samples_available' | t: count: samples_max -}}
-          </p>
-        </div>
-        <div class="knr-cart-samples__row">
-          <ul class="knr-cart-samples__slots" role="list">
-            {%- for item in cart.items -%}
-              {%- if item.properties._sample -%}
-                <li class="knr-cart-samples__slot is-filled">
-                  {%- if item.image -%}
-                    {{ item.image | image_url: width: 96 | image_tag: loading: 'lazy', widths: '32,64,96', alt: item.title }}
-                  {%- endif -%}
-                </li>
-              {%- endif -%}
-            {%- endfor -%}
-            {%- for i in (1..empty_slots) -%}
-              <li class="knr-cart-samples__slot" aria-hidden="true">
-                <span class="svg-wrapper">{{- 'knr-icon-expand.svg' | inline_asset_content -}}</span>
-              </li>
-            {%- endfor -%}
-          </ul>
-          <button type="button" class="knr-cart-samples__cta" data-samples-open>
-            {%- if selected_samples > 0 -%}
-              {{- 'content.cart_rewards.modify' | t -}}
-            {%- else -%}
-              {{- 'content.cart_rewards.choose' | t -}}
-            {%- endif -%}
-          </button>
-        </div>
-      </div>
-    </div>
-
+  {%- if show_samples -%}
     <div
       class="knr-cart-samples-screen"
       data-samples-screen
@@ -229,7 +201,7 @@
           data-samples-close
           aria-label="{{ 'accessibility.back' | t }}"
         >
-          <span class="svg-wrapper">{{- 'icon-chevron-left.svg' | inline_asset_content -}}</span>
+          <span class="svg-wrapper">{{- 'knr-icon-arrow-left.svg' | inline_asset_content -}}</span>
         </button>
         <span class="knr-cart-samples-screen__title">{{ 'content.cart_rewards.samples_heading' | t }}</span>
         <span class="knr-cart-samples-screen__counter" data-samples-counter>{{ selected_samples }}/{{ samples_max }}</span>
@@ -405,7 +377,7 @@
                     <button
                       type="button"
                       class="knr-cart-line__remove button-unstyled"
-                      on:click="/onLineItemRemove/{{ line }}"
+                      data-line-remove
                       aria-label="{{ 'accessibility.remove_item' | t: title: item.title | escape }}"
                     >
                       {{- 'content.cart_rewards.remove' | t -}}
@@ -423,6 +395,43 @@
     </scroll-hint>
 
     <div class="knr-cart-drawer__footer">
+      {%- if show_samples -%}
+        <div class="knr-cart-samples" data-samples-module>
+          <div class="knr-cart-samples__card">
+            <div class="knr-cart-samples__head">
+              <p class="knr-cart-samples__title">{{ section.settings.samples_title }}</p>
+              <p class="knr-cart-samples__subtitle">
+                {{- 'content.cart_rewards.samples_available' | t: count: samples_max -}}
+              </p>
+            </div>
+            <div class="knr-cart-samples__row">
+              <ul class="knr-cart-samples__slots" role="list">
+                {%- for item in cart.items -%}
+                  {%- if item.properties._sample -%}
+                    <li class="knr-cart-samples__slot is-filled">
+                      {%- if item.image -%}
+                        {{ item.image | image_url: width: 96 | image_tag: loading: 'lazy', widths: '32,64,96', alt: item.title }}
+                      {%- endif -%}
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- for i in (1..empty_slots) -%}
+                  <li class="knr-cart-samples__slot" aria-hidden="true">
+                    <span class="svg-wrapper">{{- 'icon-plus.svg' | inline_asset_content -}}</span>
+                  </li>
+                {%- endfor -%}
+              </ul>
+              <button type="button" class="knr-cart-samples__cta" data-samples-open>
+                {%- if selected_samples > 0 -%}
+                  {{- 'content.cart_rewards.modify' | t -}}
+                {%- else -%}
+                  {{- 'content.cart_rewards.choose' | t -}}
+                {%- endif -%}
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
       <a href="{{ routes.cart_url }}" class="knr-cart-drawer__cta">
         <span class="knr-cart-drawer__cta-label">{{ 'content.cart_rewards.view_cart' | t }}</span>
         <span class="knr-cart-drawer__cta-price">
@@ -494,6 +503,14 @@
     overflow: hidden;
   }
 
+  /* Rewards controller wraps the progress bar + chooser overlay at the top; the
+     samples card itself lives in the footer (events are delegated from the
+     drawer), so natural DOM order already gives header · progress · items ·
+     footer(card + CTA). */
+  .knr-cart-rewards-root {
+    display: block;
+  }
+
   /* Header and rewards stay fixed; the item list scrolls; the footer sticks. */
   .knr-cart-drawer .knr-cart-drawer__content {
     flex: 1 1 auto;
@@ -507,14 +524,14 @@
 
   /* White frame around the green incentive card. */
   .knr-cart-rewards {
-    padding: 1rem;
+    padding: var(--knr-space-4);
     border-block-end: 1px solid var(--knr-cd-hairline);
   }
 
   .knr-cart-rewards__incentive {
     display: grid;
-    gap: 1.25rem; /* 20px */
-    padding: 1rem;
+    gap: var(--knr-space-5); /* 20px */
+    padding: var(--knr-space-4);
     background: var(--knr-cd-incentive-bg);
   }
 
@@ -524,10 +541,10 @@
 
   .knr-cart-rewards__message {
     margin: 0;
-    font-size: 0.75rem; /* 12px */
+    font-size: var(--knr-text-sm); /* 12px */
     line-height: 1.333;
     text-align: center;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-rewards__amount {
@@ -578,7 +595,7 @@
     flex: 1 0 0;
     display: grid;
     justify-items: center;
-    column-gap: 0.5rem;
+    column-gap: var(--knr-space-2);
     text-align: center;
   }
 
@@ -593,7 +610,7 @@
     border: 1px solid var(--knr-cd-marker-border);
     border-radius: 50%;
     background: var(--knr-cd-marker-inactive);
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-rewards__marker-icon svg {
@@ -609,18 +626,20 @@
   .knr-cart-rewards__marker-label {
     font-size: 0.625rem; /* 10px */
     line-height: 1.4;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
-  /* Samples footer card */
+  /* Samples card — rendered inside the footer, above the CTA. The footer owns
+     the divider and outer spacing, so the wrapper itself stays bare. */
   .knr-cart-samples {
-    padding: 0 1rem 1rem;
+    inline-size: 100%;
+    padding-block-start: var(--knr-space-2); /* +8px → 16px above the card with the footer's top padding */
   }
 
   .knr-cart-samples__card {
     display: grid;
-    gap: 1rem;
-    padding: 1.25rem; /* 20px */
+    gap: var(--knr-space-4);
+    padding: var(--knr-space-5); /* 20px */
     background: var(--knr-cd-incentive-bg);
   }
 
@@ -631,15 +650,15 @@
 
   .knr-cart-samples__title {
     margin: 0;
-    font-size: 0.875rem; /* 14px */
+    font-size: var(--knr-text-base); /* 14px */
     font-weight: 500;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples__subtitle {
     margin: 0;
     font-size: 0.625rem; /* 10px */
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples__row {
@@ -662,10 +681,14 @@
     place-items: center;
     inline-size: 2rem; /* 32px */
     block-size: 2rem;
-    background: #fff;
+    background: var(--knr-color-white);
     border: 1px dashed var(--knr-cd-border);
     color: var(--knr-cd-muted);
     overflow: hidden;
+  }
+
+  .knr-cart-samples__slot .svg-wrapper {
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples__slot svg {
@@ -686,12 +709,12 @@
 
   .knr-cart-samples__cta {
     flex: 0 0 auto;
-    padding: 0.5rem 1.5rem; /* 8px / 24px */
-    background: #fff;
+    padding: var(--knr-space-2) var(--knr-space-6); /* 8px / 24px */
+    background: var(--knr-color-white);
     border: 1px solid var(--knr-cd-border);
-    font-size: 0.75rem; /* 12px */
+    font-size: var(--knr-text-sm); /* 12px */
     font-weight: 500;
-    color: #000;
+    color: var(--knr-color-black);
     cursor: pointer;
   }
 
@@ -702,7 +725,7 @@
     z-index: 5;
     display: none;
     flex-direction: column;
-    background: #fff;
+    background: var(--knr-color-white);
   }
 
   .knr-cart-drawer.is-choosing-samples .knr-cart-samples-screen {
@@ -712,33 +735,50 @@
   .knr-cart-samples-screen__header {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
+    gap: var(--knr-space-3); /* 12px */
+    padding: var(--knr-space-4); /* 16px */
+    background: var(--knr-cd-incentive-bg);
     border-block-end: 1px solid var(--knr-cd-border);
   }
 
   .knr-cart-samples-screen__back {
+    position: relative;
     display: grid;
     place-items: center;
-    padding: 0.25rem;
-    color: #000;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--knr-color-black);
     cursor: pointer;
   }
 
+  /* 44px tap target (WCAG 2.5.5) with no visible box, matching the mockup. */
+  .knr-cart-samples-screen__back::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    transform: translate(-50%, -50%);
+  }
+
   .knr-cart-samples-screen__back svg {
-    inline-size: 1rem;
-    block-size: 1rem;
+    inline-size: 0.875rem; /* 14px (arrow viewBox is 15.5 × 11.69) */
+    block-size: auto;
   }
 
   .knr-cart-samples-screen__title {
     flex: 1 0 auto;
-    font-size: 0.875rem; /* 14px */
+    font-size: var(--knr-text-base); /* 14px */
+    line-height: 1.4286; /* 20px */
     font-weight: 500;
   }
 
   .knr-cart-samples-screen__counter {
-    font-size: 0.75rem; /* 12px */
-    color: var(--knr-cd-muted);
+    font-size: var(--knr-text-base); /* 14px */
+    font-weight: 500;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples-screen__grid {
@@ -749,18 +789,31 @@
     margin: 0;
     padding: 0;
     list-style: none;
+    border-inline-start: 1px solid var(--knr-cd-border);
+    scrollbar-width: none; /* hidden per mockup; the fade below hints scrolling */
   }
 
+  .knr-cart-samples-screen__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Tiles carry their right border (the grid adds the left). Horizontal rules
+     come from the top border of rows 2+, so the LAST row has no bottom border
+     and won't double the footer divider. The header's bottom border closes the top. */
   .knr-cart-samples-screen__item {
     display: flex;
     flex-direction: column;
-    border-inline-end: 1px solid var(--knr-cd-hairline);
-    border-block-end: 1px solid var(--knr-cd-hairline);
+    border-inline-end: 1px solid var(--knr-cd-border);
+  }
+
+  .knr-cart-samples-screen__item:nth-child(n + 4) {
+    border-block-start: 1px solid var(--knr-cd-border);
   }
 
   .knr-cart-samples-screen__media {
-    aspect-ratio: 166 / 194;
-    background: var(--knr-cd-incentive-bg);
+    position: relative;
+    aspect-ratio: 6 / 7; /* 166.67 × 194.44 */
+    background: var(--knr-color-white);
     overflow: hidden;
   }
 
@@ -770,38 +823,79 @@
     object-fit: cover;
   }
 
+  /* Loading micro-interaction while a sample add/remove round-trips. */
+  .knr-cart-samples-screen__item.is-loading {
+    pointer-events: none;
+  }
+
+  .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgb(255 255 255 / 0.6);
+  }
+
+  .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    z-index: 2;
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+    margin-block-start: -0.625rem;
+    margin-inline-start: -0.625rem;
+    border: 2px solid var(--knr-cd-border);
+    border-block-start-color: var(--knr-color-black);
+    border-radius: 50%;
+    animation: knr-cart-spin 0.6s linear infinite;
+  }
+
+  @keyframes knr-cart-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-cart-samples-screen__item.is-loading .knr-cart-samples-screen__media::after,
+    .knr-cart-line.is-loading::after {
+      animation-duration: 1.5s;
+    }
+  }
+
   .knr-cart-samples-screen__body {
     display: grid;
-    gap: 0.25rem;
-    padding: 0.5rem 0.75rem; /* 8px / 12px */
+    gap: var(--knr-space-1); /* 4px */
+    padding: var(--knr-space-2) var(--knr-space-3) var(--knr-space-3); /* 8 / 12 / 12 */
   }
 
   .knr-cart-samples-screen__name {
-    font-size: 0.75rem; /* 12px */
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333; /* 16px */
     font-weight: 500;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples-screen__variant {
-    font-size: 0.75rem;
-    color: var(--knr-cd-muted);
+    font-size: var(--knr-text-sm); /* 12px */
+    line-height: 1.333; /* 16px */
+    color: var(--knr-color-black);
   }
 
   .knr-cart-samples-screen__toggle {
     justify-self: start;
-    margin-block-start: 0.75rem;
+    margin-block-start: var(--knr-space-3); /* 12px → 16px total gap to the text block */
     padding: 0;
     background: none;
     border: none;
-    font-size: 0.75rem;
-    color: #000;
+    font-size: var(--knr-text-sm); /* 12px */
+    font-weight: 500;
+    color: var(--knr-color-black);
     text-decoration: underline;
     text-underline-offset: 2px;
     cursor: pointer;
-  }
-
-  .knr-cart-samples-screen__item.is-selected .knr-cart-samples-screen__toggle {
-    font-weight: 500;
   }
 
   .knr-cart-samples-screen__toggle:disabled {
@@ -811,8 +905,20 @@
   }
 
   .knr-cart-samples-screen__footer {
-    padding: 1rem 1.5rem;
+    position: relative;
+    padding: var(--knr-space-4); /* 16px */
     border-block-start: 1px solid var(--knr-cd-border);
+  }
+
+  /* Scrollbar is hidden, so a subtle fade above the footer signals more samples. */
+  .knr-cart-samples-screen__footer::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 100%;
+    block-size: 2.5rem; /* 40px */
+    background: linear-gradient(to top, rgb(0 0 0 / 0.06), transparent);
+    pointer-events: none;
   }
 
   .knr-cart-samples-screen__validate {
@@ -820,27 +926,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.75rem; /* 12px / 28px */
-    background: #000;
-    border: 1.2px solid #000;
-    font-size: 0.875rem; /* 14px */
+    gap: var(--knr-space-2);
+    padding: var(--knr-space-3) 1.75rem; /* 12px / 28px (28px = no scale token) */
+    background: var(--knr-color-black);
+    border: 1.2px solid var(--knr-color-black);
+    font-size: var(--knr-text-base); /* 14px */
     font-weight: 500;
-    color: #fff;
+    color: var(--knr-color-white);
     cursor: pointer;
   }
 
   .knr-cart-samples-screen__validate-count {
-    padding-inline-start: 0.5rem;
-    border-inline-start: 1px solid currentcolor;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--knr-space-2); /* 8px */
+    color: var(--knr-cd-bar-track); /* #f5f5f5 */
+    text-transform: uppercase;
+  }
+
+  .knr-cart-samples-screen__validate-count::before {
+    content: '';
+    inline-size: 1px;
+    block-size: 0.6875rem; /* 11px */
+    background: currentcolor;
   }
 
   .knr-cart-gift {
     display: flex;
     align-items: center;
-    gap: var(--padding-sm, 0.75rem);
-    padding: var(--padding-md, 1rem);
-    border-block-start: 1px solid var(--color-border, rgb(0 0 0 / 0.1));
+    gap: var(--knr-space-3);
+    padding: var(--knr-space-4);
+    border-block-start: 1px solid var(--knr-color-border);
   }
 
   .knr-cart-gift__body {
@@ -849,7 +965,7 @@
   }
 
   .knr-cart-gift__eyebrow {
-    font-size: var(--font-size--2xs, 0.6875rem);
+    font-size: var(--knr-text-xs); /* 11px */
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -858,17 +974,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem; /* 16px / 24px */
+    gap: var(--knr-space-3);
+    padding: var(--knr-space-4) var(--knr-space-6); /* 16px / 24px */
     border-block-end: 1px solid var(--knr-cd-border);
   }
 
   .knr-cart-drawer__heading {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--knr-space-3);
     margin: 0;
-    font-size: 1rem; /* 16px */
+    font-size: var(--knr-text-md); /* 16px */
     font-weight: 500;
   }
 
@@ -882,7 +998,7 @@
   .knr-cart-drawer__heading-icon svg {
     inline-size: 1.25rem; /* 20px */
     block-size: 1.25rem;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   /* Count badge over the bag, per mockup (sand fill, thin black ring).
@@ -893,12 +1009,12 @@
     inset-inline-end: -0.375rem; /* -6px */
     inline-size: 0.875rem; /* 14px */
     block-size: 0.875rem;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-drawer__heading-icon .cart-bubble__background {
     background-color: var(--knr-cd-bar-fill);
-    border: 1.2px solid #000;
+    border: 1.2px solid var(--knr-color-black);
     border-radius: 50%;
   }
 
@@ -910,8 +1026,8 @@
   .knr-cart-drawer__close {
     display: grid;
     place-items: center;
-    padding: 0.25rem;
-    color: #000;
+    padding: var(--knr-space-1);
+    color: var(--knr-color-black);
     cursor: pointer;
   }
 
@@ -922,7 +1038,7 @@
   }
 
   .knr-cart-drawer__empty {
-    padding: var(--padding-lg, 2rem) var(--padding-md, 1rem);
+    padding: var(--knr-space-8) var(--knr-space-4);
     text-align: center;
   }
 
@@ -936,8 +1052,8 @@
   .knr-cart-line {
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* 8px */
-    padding-inline: 1rem;
+    gap: var(--knr-space-2); /* 8px */
+    padding-inline: var(--knr-space-4);
     border-block-end: 1px solid var(--knr-cd-hairline);
   }
 
@@ -945,12 +1061,33 @@
     border-block-end: none;
   }
 
+  /* Loading state while a line is being removed (the drawer stays open). */
+  .knr-cart-line.is-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  .knr-cart-line.is-loading::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 1rem;
+    inline-size: 1.25rem; /* 20px */
+    block-size: 1.25rem;
+    margin-block-start: -0.625rem;
+    border: 2px solid var(--knr-cd-border);
+    border-block-start-color: var(--knr-color-black);
+    border-radius: 50%;
+    animation: knr-cart-spin 0.6s linear infinite;
+  }
+
   .knr-cart-line__media {
     flex: 0 0 auto;
     inline-size: 6.25rem; /* 100px */
     aspect-ratio: 296 / 345;
-    padding-block: 1rem;
-    padding-left: 0.5rem;
+    padding-block: var(--knr-space-4);
+    padding-left: var(--knr-space-2);
   }
 
   .knr-cart-line__media img {
@@ -963,15 +1100,15 @@
     flex: 1 1 auto;
     min-inline-size: 0;
     display: grid;
-    gap: 0.25rem; /* 4px */
-    padding-block: 1.25rem; /* 20px */
-    padding-inline-start: 1.25rem; /* 20px */
+    gap: var(--knr-space-1); /* 4px */
+    padding-block: var(--knr-space-5); /* 20px */
+    padding-inline-start: var(--knr-space-5); /* 20px */
   }
 
   .knr-cart-line__top {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--knr-space-2);
   }
 
   .knr-cart-line__review {
@@ -979,12 +1116,12 @@
     min-inline-size: 0;
     display: flex;
     align-items: center;
-    gap: 0.25rem; /* 4px */
+    gap: var(--knr-space-1); /* 4px */
   }
 
   .knr-cart-line__stars {
     display: inline-flex;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__star {
@@ -1006,40 +1143,40 @@
     font-weight: 500;
     line-height: 1.4;
     text-transform: uppercase;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__price {
     flex: 0 0 auto;
-    font-size: 0.75rem; /* 12px */
+    font-size: var(--knr-text-sm); /* 12px */
     font-weight: 500;
     line-height: 1.333;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__info {
     display: grid;
-    gap: 0.25rem; /* 4px */
-    font-size: 0.75rem; /* 12px */
+    gap: var(--knr-space-1); /* 4px */
+    font-size: var(--knr-text-sm); /* 12px */
     line-height: 1.333;
   }
 
   .knr-cart-line__title {
     font-weight: 500;
-    color: #000;
+    color: var(--knr-color-black);
     text-decoration: none;
   }
 
   .knr-cart-line__variant {
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: var(--knr-space-2);
+    margin-top: var(--knr-space-2);
   }
 
   /* Quantity stepper, matching the mockup: 81×28 bordered box, 8px inner
@@ -1050,11 +1187,11 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* 8px */
+    gap: var(--knr-space-2); /* 8px */
     inline-size: 5.0625rem; /* 81px */
     block-size: 1.75rem; /* 28px */
-    padding-block: 0.25rem; /* 4px */
-    padding-inline: 0.5rem; /* 8px */
+    padding-block: var(--knr-space-1); /* 4px */
+    padding-inline: var(--knr-space-2); /* 8px */
     border: 1px solid var(--knr-cd-hairline);
     border-radius: 0;
   }
@@ -1065,7 +1202,7 @@
     display: grid;
     place-items: center;
     padding: 0;
-    color: #000;
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__actions .quantity-selector .button::after {
@@ -1097,12 +1234,12 @@
     border: none;
     background: none;
     text-align: center;
-    font-size: 0.875rem; /* 14px */
-    color: #000;
+    font-size: var(--knr-text-base); /* 14px */
+    color: var(--knr-color-black);
   }
 
   .knr-cart-line__remove {
-    font-size: 0.75rem; /* 12px */
+    font-size: var(--knr-text-sm); /* 12px */
     line-height: 1.333;
     color: var(--knr-cd-muted);
     cursor: pointer;
@@ -1110,7 +1247,7 @@
 
   .knr-cart-line__error {
     display: flex;
-    font-size: 0.75rem;
+    font-size: var(--knr-text-sm);
     color: var(--color-error, #c00);
   }
 
@@ -1123,8 +1260,8 @@
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem; /* 8px */
-    padding: 0.5rem 1rem 0.625rem; /* 8 / 16 / 10 */
+    gap: var(--knr-space-2); /* 8px */
+    padding: var(--knr-space-2) var(--knr-space-4) 0.625rem; /* 8 / 16 / 10 (10px = no scale token) */
     border-block-start: 1px solid var(--knr-cd-hairline);
   }
 
@@ -1132,12 +1269,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem; /* 8px */
-    padding: 0.75rem 1.75rem; /* 12px / 28px */
-    background: #000;
-    border: 1.2px solid #000;
-    color: #fff;
-    font-size: 0.875rem; /* 14px */
+    gap: var(--knr-space-2); /* 8px */
+    padding: var(--knr-space-3) 1.75rem; /* 12px / 28px (28px = no scale token) */
+    background: var(--knr-color-black);
+    border: 1.2px solid var(--knr-color-black);
+    color: var(--knr-color-white);
+    font-size: var(--knr-text-base); /* 14px */
     font-weight: 500;
     line-height: 1.4286;
     text-decoration: none;
@@ -1146,7 +1283,7 @@
   .knr-cart-drawer__cta-price {
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* 8px */
+    gap: var(--knr-space-2); /* 8px */
   }
 
   .knr-cart-drawer__cta-sep {

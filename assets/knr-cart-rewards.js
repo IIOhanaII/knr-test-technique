@@ -1,6 +1,7 @@
 import { Component } from '@theme/component';
 import { fetchConfig } from '@theme/utilities';
 import { CartUpdateEvent, ThemeEvents } from '@theme/events';
+import { morphSection, sectionRenderer } from '@theme/section-renderer';
 
 const SOURCE = 'knr-cart-rewards';
 
@@ -25,16 +26,32 @@ class KnrCartRewards extends Component {
   /** @type {Element | null} Element focused before the chooser opened. */
   #trigger = null;
 
+  /** @type {Element | null} Stable drawer the rewards UI is delegated from. */
+  #root = null;
+
+  /** @type {Record<string, string> | null} Rendered sections from the last mutation. */
+  #sections = null;
+
+  /** @type {HTMLElement | null} Sample tile showing the loading state, if any. */
+  #loadingItem = null;
+
   connectedCallback() {
     super.connectedCallback();
-    this.addEventListener('click', this.#onClick);
-    this.addEventListener('keydown', this.#onKeydown);
+    // The rewards UI is spread across the drawer (samples card lives in the
+    // footer, the chooser is a full overlay), so delegate from the stable
+    // drawer rather than from `this`.
+    this.#root = this.drawer ?? this;
+    this.#root.addEventListener('click', this.#onClick);
+    this.#root.addEventListener('keydown', this.#onKeydown);
     document.addEventListener(ThemeEvents.cartUpdate, this.#onCartUpdate);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.#root?.removeEventListener('click', this.#onClick);
+    this.#root?.removeEventListener('keydown', this.#onKeydown);
     document.removeEventListener(ThemeEvents.cartUpdate, this.#onCartUpdate);
+    this.#root = null;
   }
 
   /** @returns {string | undefined} */
@@ -64,6 +81,21 @@ class KnrCartRewards extends Component {
       return;
     }
 
+    const removeBtn = target.closest('[data-line-remove]');
+    if (removeBtn instanceof HTMLElement) {
+      if (this.#busy) return;
+      const row = removeBtn.closest('[data-key]');
+      const key = row instanceof HTMLElement ? row.dataset.key : undefined;
+      if (!key) return;
+      if (row instanceof HTMLElement) {
+        this.#loadingItem = row;
+        row.classList.add('is-loading');
+        row.setAttribute('aria-busy', 'true');
+      }
+      this.#run(() => this.#removeLine(key));
+      return;
+    }
+
     const toggle = target.closest('[data-sample-toggle]');
     if (!(toggle instanceof HTMLButtonElement) || toggle.disabled) return;
 
@@ -74,6 +106,14 @@ class KnrCartRewards extends Component {
     const isSelected = item?.classList.contains('is-selected');
     if (this.#busy) return;
 
+    // Surfacing a spinner on the tile: the add/remove round-trip + re-render is
+    // slow enough to feel broken without immediate feedback.
+    if (item instanceof HTMLElement) {
+      this.#loadingItem = item;
+      item.classList.add('is-loading');
+      item.setAttribute('aria-busy', 'true');
+    }
+
     if (isSelected) {
       this.#run(() => this.#removeFlagged(variantId, '_sample'));
     } else {
@@ -83,9 +123,21 @@ class KnrCartRewards extends Component {
 
   /** Reconcile gift + sample cap whenever the cart changes elsewhere. */
   #onCartUpdate = (event) => {
-    if (event instanceof CustomEvent && event.detail?.data?.source === SOURCE) return;
+    const source = event instanceof CustomEvent ? event.detail?.data?.source : undefined;
+    if (source === SOURCE) return;
     if (this.#busy) return;
-    this.#run(() => this.#reconcile());
+    this.#run(async () => {
+      const changed = await this.#reconcile();
+      // A reconcile mutation already triggers a re-render via #run → #announce.
+      // Otherwise, refresh the drawer ourselves for external additions (e.g. the
+      // product page): the native Sections Rendering morph is unreliable for a
+      // header-group section, so line items and the count bubble stay stale.
+      // The in-drawer cart-items-component already morphs its own quantity edits.
+      if (!changed && source !== 'cart-items-component') {
+        await this.#refresh();
+      }
+      return changed;
+    });
   };
 
   /** Close the chooser on Escape instead of dismissing the whole drawer. */
@@ -100,16 +152,16 @@ class KnrCartRewards extends Component {
   #openChooser() {
     const drawer = this.drawer;
     if (!drawer) return;
-    this.#trigger = this.querySelector('[data-samples-open]');
+    this.#trigger = drawer.querySelector('[data-samples-open]');
     drawer.classList.add('is-choosing-samples');
-    this.querySelector('[data-samples-screen] [data-samples-close]')?.focus();
+    drawer.querySelector('[data-samples-screen] [data-samples-close]')?.focus();
   }
 
   #closeChooser() {
     const drawer = this.drawer;
     if (!drawer) return;
     drawer.classList.remove('is-choosing-samples');
-    const trigger = this.#trigger ?? this.querySelector('[data-samples-open]');
+    const trigger = this.#trigger ?? drawer.querySelector('[data-samples-open]');
     if (trigger instanceof HTMLElement) trigger.focus();
   }
 
@@ -126,7 +178,23 @@ class KnrCartRewards extends Component {
       console.error('[knr-cart-rewards]', error);
     } finally {
       this.#busy = false;
+      // Clear the tile spinner. After a successful toggle the morph already
+      // re-rendered the tile without it; this covers the error path.
+      this.#loadingItem?.classList.remove('is-loading');
+      this.#loadingItem?.removeAttribute('aria-busy');
+      this.#loadingItem = null;
     }
+  }
+
+  /**
+   * Re-renders the drawer section in place (count bubble + line items) without a
+   * cart mutation. Uses hydration mode so the open dialog and the samples chooser
+   * overlay state (held on the parent component) are left untouched.
+   */
+  async #refresh() {
+    const id = this.sectionId;
+    if (!id) return;
+    await sectionRenderer.renderSection(id, { cache: false, mode: 'hydration' });
   }
 
   /**
@@ -190,7 +258,10 @@ class KnrCartRewards extends Component {
       sections: this.sectionId,
       sections_url: window.location.pathname,
     });
-    await fetch(Theme.routes.cart_add_url, fetchConfig('javascript', { body }));
+    const response = await fetch(Theme.routes.cart_add_url, fetchConfig('json', { body }));
+    const result = await response.json();
+    if (result.sections) this.#sections = result.sections;
+    return true;
   }
 
   /**
@@ -204,7 +275,23 @@ class KnrCartRewards extends Component {
       sections: this.sectionId,
       sections_url: window.location.pathname,
     });
-    await fetch(Theme.routes.cart_change_url, fetchConfig('javascript', { body }));
+    const response = await fetch(Theme.routes.cart_change_url, fetchConfig('json', { body }));
+    const result = await response.json();
+    if (result.sections) this.#sections = result.sections;
+  }
+
+  /**
+   * Removes a paid cart line, then reconciles rewards (drops the gift/samples if
+   * the qualifying subtotal fell below their tiers). Routed through our own
+   * hydration-safe re-render so the drawer stays open with a loader — the native
+   * line remove cascades into a full re-render that re-animates the drawer.
+   * @param {string} key - Line item key.
+   * @returns {Promise<boolean>}
+   */
+  async #removeLine(key) {
+    await this.#change(key, 0);
+    await this.#reconcile();
+    return true;
   }
 
   /**
@@ -227,8 +314,25 @@ class KnrCartRewards extends Component {
    * re-render. The native cart-items-component re-renders the drawer section.
    */
   async #announce() {
+    const id = this.sectionId;
     const cart = await this.#getCart();
-    this.dispatchEvent(
+    // Re-render the drawer in place from the section HTML captured during the
+    // mutations. Hydration mode only morphs the keyed inner, leaving the
+    // <dialog> and the chooser overlay state (held on the parent component)
+    // untouched — so adding/removing samples or lines never re-animates or
+    // closes the open drawer, and the chooser keeps the user on the grid.
+    const html = id ? this.#sections?.[id] : null;
+    if (id && html) {
+      await morphSection(id, html, { mode: 'hydration' });
+    } else {
+      await this.#refresh();
+    }
+    this.#sections = null;
+    // Notify the rest of the theme (header count bubble, product-form quantity
+    // sync). Dispatched from the cart-items-component so its own listener bails
+    // (event.target === this) instead of full-morphing the open drawer.
+    const host = this.closest('cart-items-component') ?? this;
+    host.dispatchEvent(
       new CartUpdateEvent(cart, this.id || SOURCE, {
         source: SOURCE,
         itemCount: cart.item_count,
