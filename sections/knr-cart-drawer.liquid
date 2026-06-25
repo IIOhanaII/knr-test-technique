@@ -306,7 +306,16 @@
               assign line = item.index | plus: 1
               assign can_update = item.instructions.can_update_quantity | default: true, allow_false: true
             -%}
+            {%- comment -%}
+              Stable id so the morph keys lines by item.key and reuses each node
+              instead of positional matching. Without it, inserting/removing the
+              gift or a sample shifts positions and the morph can replace the
+              following rows — detaching a quantity-selector whose 300ms debounce
+              is still pending, which silently drops the update (more likely under
+              production latency than on a local preview).
+            {%- endcomment -%}
             <li
+              id="knr-line-{{ item.key }}"
               class="knr-cart-line{% if is_gift %} knr-cart-line--free{% endif %}"
               ref="cartItemRows[]"
               data-key="{{ item.key }}"
