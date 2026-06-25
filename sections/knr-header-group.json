@@ -17,13 +17,16 @@
         "msg-1": {
           "type": "announcement",
           "settings": {
-            "text": "Livraison estimée sous 48h"
+            "text": "Livraison estimée sous 48h",
+            "link": "",
+            "underline": false
           }
         },
         "msg-2": {
           "type": "announcement",
           "settings": {
             "text": "Consectetur.",
+            "link": "",
             "underline": true
           }
         }
@@ -32,13 +35,19 @@
         "msg-1",
         "msg-2"
       ],
-      "settings": {}
+      "settings": {
+        "speed": 5,
+        "background_color": "#000000",
+        "text_color": "#ffffff"
+      }
     },
     "knr-header": {
       "type": "knr-header",
       "settings": {
         "menu": "main-menu",
         "show_location": true,
+        "location_url": "",
+        "location_label": "Magasins",
         "show_account": true,
         "show_search": true,
         "show_burger": true
@@ -52,6 +61,7 @@
           "settings": {
             "threshold": 50,
             "reward_type": "shipping",
+            "samples_max": 3,
             "label": "Livraison offerte",
             "message_locked": "Plus que {montant} pour bénéficier de {avantage}",
             "benefit": "la livraison offerte"
@@ -73,6 +83,7 @@
           "settings": {
             "threshold": 100,
             "reward_type": "gift",
+            "samples_max": 3,
             "label": "1 produit offert",
             "message_locked": "Plus que {montant} pour bénéficier de {avantage}",
             "benefit": "votre produit offert"
@@ -85,7 +96,9 @@
         "tier-gift"
       ],
       "settings": {
+        "samples_collection": "echantillons",
         "samples_title": "Choisissez vos échantillons offerts",
+        "gift_product": "serum-eclat",
         "message_all_unlocked": "Bravo, vous bénéficiez de tous vos cadeaux !"
       }
     }
