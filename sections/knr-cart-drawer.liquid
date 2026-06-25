@@ -91,11 +91,6 @@
     assign samples_max = samples_max_setting
   endif
 
-  assign gift_unlocked = false
-  if gift_tier_cents > 0 and qualifying >= gift_tier_cents
-    assign gift_unlocked = true
-  endif
-
   assign gift_product = section.settings.gift_product
   assign gift_variant = gift_product.selected_or_first_available_variant
   assign samples_collection = section.settings.samples_collection
@@ -256,22 +251,6 @@
       </div>
     </div>
   {%- endif -%}
-
-  {%- comment -%} Gift module {%- endcomment -%}
-  {%- if gift_unlocked and gift_variant != blank -%}
-    <div class="knr-cart-gift" data-gift-module>
-      <span class="knr-cart-gift__media">
-        {%- if gift_product.featured_image -%}
-          {{ gift_product.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', widths: '60,120', alt: gift_product.featured_image.alt | default: gift_product.title }}
-        {%- endif -%}
-      </span>
-      <span class="knr-cart-gift__body">
-        <span class="knr-cart-gift__eyebrow">{{ 'content.cart_rewards.gift_unlocked' | t }}</span>
-        <span class="knr-cart-gift__name">{{ gift_product.title }}</span>
-      </span>
-      <span class="knr-cart-gift__badge">{{ 'content.cart_rewards.free_badge' | t }}</span>
-    </div>
-  {%- endif -%}
 {%- endcapture -%}
 
 {%- capture cart_items_children -%}
@@ -317,19 +296,22 @@
       <form action="{{ routes.cart_url }}" class="knr-cart-drawer__items" id="cart-form" method="post">
         <ul class="knr-cart-lines" role="list">
           {%- for item in cart.items -%}
+            {%- comment -%} Samples never appear as lines — only as thumbnails in the samples card. {%- endcomment -%}
+            {%- if item.properties._sample -%}{%- continue -%}{%- endif -%}
             {%- liquid
-              assign is_free = false
-              if item.properties._sample or item.properties._gift
-                assign is_free = true
+              assign is_gift = false
+              if item.properties._gift
+                assign is_gift = true
               endif
               assign line = item.index | plus: 1
               assign can_update = item.instructions.can_update_quantity | default: true, allow_false: true
             -%}
             <li
-              class="knr-cart-line{% if is_free %} knr-cart-line--free{% endif %}"
+              class="knr-cart-line{% if is_gift %} knr-cart-line--free{% endif %}"
               ref="cartItemRows[]"
               data-key="{{ item.key }}"
               data-parent-key="{{ item.parent_relationship.parent.key }}"
+              {% if is_gift %}data-gift-line{% endif %}
             >
               <a href="{{ item.url }}" class="knr-cart-line__media" tabindex="-1" aria-hidden="true">
                 {%- if item.image -%}
@@ -352,7 +334,7 @@
                     <span class="knr-cart-line__avis">{{ 'content.cart_rewards.reviews_count' | t: count: 132 }}</span>
                   </span>
                   <span class="knr-cart-line__price">
-                    {%- if is_free -%}
+                    {%- if is_gift -%}
                       {{- 'content.cart_rewards.free_badge' | t -}}
                     {%- else -%}
                       {{- item.final_line_price | money_without_trailing_zeros -}}
@@ -365,8 +347,8 @@
                     <span class="knr-cart-line__variant">{{ item.variant.title }}</span>
                   {%- endif -%}
                 </div>
-                {%- unless is_free -%}
-                  <div class="knr-cart-line__actions">
+                <div class="knr-cart-line__actions{% if is_gift %} knr-cart-line__actions--gift{% endif %}">
+                  {%- unless is_gift -%}
                     {% render 'quantity-selector',
                       product: item.product,
                       variant: item.variant,
@@ -374,16 +356,16 @@
                       line_index: item.index,
                       can_update_quantity: can_update
                     %}
-                    <button
-                      type="button"
-                      class="knr-cart-line__remove button-unstyled"
-                      data-line-remove
-                      aria-label="{{ 'accessibility.remove_item' | t: title: item.title | escape }}"
-                    >
-                      {{- 'content.cart_rewards.remove' | t -}}
-                    </button>
-                  </div>
-                {%- endunless -%}
+                  {%- endunless -%}
+                  <button
+                    type="button"
+                    class="knr-cart-line__remove button-unstyled"
+                    data-line-remove
+                    aria-label="{{ 'accessibility.remove_item' | t: title: item.title | escape }}"
+                  >
+                    {{- 'content.cart_rewards.remove' | t -}}
+                  </button>
+                </div>
                 <div class="knr-cart-line__error hidden" role="alert" ref="cartItemErrorContainer-{{ line }}">
                   <small class="knr-cart-line__error-text" ref="cartItemError-{{ line }}"></small>
                 </div>
@@ -951,25 +933,6 @@
     background: currentcolor;
   }
 
-  .knr-cart-gift {
-    display: flex;
-    align-items: center;
-    gap: var(--knr-space-3);
-    padding: var(--knr-space-4);
-    border-block-start: 1px solid var(--knr-color-border);
-  }
-
-  .knr-cart-gift__body {
-    display: grid;
-    flex: 1;
-  }
-
-  .knr-cart-gift__eyebrow {
-    font-size: var(--knr-text-xs); /* 11px */
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
   .knr-cart-drawer__header {
     display: flex;
     align-items: center;
@@ -1082,6 +1045,29 @@
     animation: knr-cart-spin 0.6s linear infinite;
   }
 
+  /* One-shot reveal when the free gift line is auto-added at the threshold. */
+  .knr-cart-line.is-revealed {
+    animation: knr-gift-reveal 0.8s ease;
+  }
+
+  @keyframes knr-gift-reveal {
+    from {
+      opacity: 0.4;
+      background-color: var(--knr-cd-incentive-bg);
+    }
+
+    to {
+      opacity: 1;
+      background-color: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .knr-cart-line.is-revealed {
+      animation: none;
+    }
+  }
+
   .knr-cart-line__media {
     flex: 0 0 auto;
     inline-size: 6.25rem; /* 100px */
@@ -1177,6 +1163,11 @@
     justify-content: space-between;
     gap: var(--knr-space-2);
     margin-top: var(--knr-space-2);
+  }
+
+  /* Gift line has no quantity stepper — keep "Supprimer" aligned right. */
+  .knr-cart-line__actions--gift {
+    justify-content: flex-end;
   }
 
   /* Quantity stepper, matching the mockup: 81×28 bordered box, 8px inner

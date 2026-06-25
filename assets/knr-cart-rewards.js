@@ -5,6 +5,12 @@ import { morphSection, sectionRenderer } from '@theme/section-renderer';
 
 const SOURCE = 'knr-cart-rewards';
 
+// Cart attribute marking the gift as declined, so it isn't re-added while the
+// cart stays above its tier (cleared when the cart drops back below). A cart
+// attribute (vs sessionStorage) survives reloads and storage-partitioned
+// contexts like the theme editor preview iframe.
+const GIFT_DISMISS_ATTR = '_gift_dismissed';
+
 /**
  * Drives the gamified cart drawer interactions without page reloads:
  * - sample selection (add/remove, capped by the unlocked tier),
@@ -34,6 +40,9 @@ class KnrCartRewards extends Component {
 
   /** @type {HTMLElement | null} Sample tile showing the loading state, if any. */
   #loadingItem = null;
+
+  /** @type {boolean} Highlight the gift line once after it is auto-added. */
+  #revealGift = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -87,12 +96,13 @@ class KnrCartRewards extends Component {
       const row = removeBtn.closest('[data-key]');
       const key = row instanceof HTMLElement ? row.dataset.key : undefined;
       if (!key) return;
+      const isGift = row instanceof HTMLElement && row.hasAttribute('data-gift-line');
       if (row instanceof HTMLElement) {
         this.#loadingItem = row;
         row.classList.add('is-loading');
         row.setAttribute('aria-busy', 'true');
       }
-      this.#run(() => this.#removeLine(key));
+      this.#run(() => this.#removeLine(key, isGift));
       return;
     }
 
@@ -197,6 +207,29 @@ class KnrCartRewards extends Component {
     await sectionRenderer.renderSection(id, { cache: false, mode: 'hydration' });
   }
 
+  /** Plays a one-shot highlight on the gift line freshly added at the threshold. */
+  #revealGiftLine() {
+    const line = this.#root?.querySelector('[data-gift-line]');
+    if (!(line instanceof HTMLElement)) return;
+    line.classList.add('is-revealed');
+    line.addEventListener('animationend', () => line.classList.remove('is-revealed'), { once: true });
+  }
+
+  /**
+   * Persists whether the user declined the gift, as a cart attribute.
+   * @param {boolean} value
+   */
+  async #setGiftDismissed(value) {
+    const body = JSON.stringify({
+      attributes: { [GIFT_DISMISS_ATTR]: value ? 'true' : '' },
+      sections: this.sectionId,
+      sections_url: window.location.pathname,
+    });
+    const response = await fetch(Theme.routes.cart_update_url, fetchConfig('json', { body }));
+    const result = await response.json();
+    if (result.sections) this.#sections = result.sections;
+  }
+
   /**
    * Adds the gift when its tier is reached and removes it (or excess samples)
    * when the qualifying subtotal drops below the relevant threshold.
@@ -207,6 +240,7 @@ class KnrCartRewards extends Component {
     const giftTier = Number(this.dataset.giftTier) || 0;
     const giftVariant = this.dataset.giftVariant;
     const samplesTier = Number(this.dataset.samplesTier) || 0;
+    const giftDismissed = cart.attributes?.[GIFT_DISMISS_ATTR] === 'true';
 
     let qualifying = 0;
     let giftKey = null;
@@ -223,23 +257,32 @@ class KnrCartRewards extends Component {
       qualifying += item.final_line_price;
     }
 
+    // Run every applicable mutation in a single pass (line keys stay valid across
+    // removals), so dropping below several tiers at once doesn't strand a line.
+    let changed = false;
+
     if (giftTier > 0 && giftVariant) {
-      if (qualifying >= giftTier && !giftKey) {
+      if (qualifying < giftTier) {
+        // Below the tier: clear any decline (re-offer on the next crossing) and
+        // pull the gift if it is still in the cart.
+        if (giftDismissed) await this.#setGiftDismissed(false);
+        if (giftKey) {
+          await this.#change(giftKey, 0);
+          changed = true;
+        }
+      } else if (!giftKey && !giftDismissed) {
+        this.#revealGift = true;
         await this.#add(giftVariant, { _gift: 'true' });
-        return true;
-      }
-      if (qualifying < giftTier && giftKey) {
-        await this.#change(giftKey, 0);
-        return true;
+        changed = true;
       }
     }
 
     if (samplesTier > 0 && qualifying < samplesTier && sampleKeys.length) {
       for (const key of sampleKeys) await this.#change(key, 0);
-      return true;
+      changed = true;
     }
 
-    return false;
+    return changed;
   }
 
   /** @returns {Promise<{ items: Array<any> }>} */
@@ -286,9 +329,13 @@ class KnrCartRewards extends Component {
    * hydration-safe re-render so the drawer stays open with a loader — the native
    * line remove cascades into a full re-render that re-animates the drawer.
    * @param {string} key - Line item key.
+   * @param {boolean} [isGift] - Whether the removed line is the free gift.
    * @returns {Promise<boolean>}
    */
-  async #removeLine(key) {
+  async #removeLine(key, isGift = false) {
+    // Removing the gift is a deliberate decline — persist it (cart attribute)
+    // before reconciling so the gift isn't re-added while still above the tier.
+    if (isGift) await this.#setGiftDismissed(true);
     await this.#change(key, 0);
     await this.#reconcile();
     return true;
@@ -328,6 +375,10 @@ class KnrCartRewards extends Component {
       await this.#refresh();
     }
     this.#sections = null;
+    if (this.#revealGift) {
+      this.#revealGift = false;
+      this.#revealGiftLine();
+    }
     // Notify the rest of the theme (header count bubble, product-form quantity
     // sync). Dispatched from the cart-items-component so its own listener bails
     // (event.target === this) instead of full-morphing the open drawer.
