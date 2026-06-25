@@ -86,10 +86,16 @@
     {%- endif -%}
 
     <cart-icon class="knr-header__action knr-header__action--cart">
-      <a href="{{ routes.cart_url }}" aria-label="{{ 'accessibility.cart' | t }}">
+      <button
+        type="button"
+        class="knr-header__cart-button button-unstyled"
+        on:click="#knr-cart-drawer/open"
+        aria-haspopup="dialog"
+        aria-label="{{ 'accessibility.cart' | t }}"
+      >
         {{- 'knr-icon-shopping-bag.svg' | inline_asset_content -}}
         {%- render 'cart-bubble', limit: 100 -%}
-      </a>
+      </button>
     </cart-icon>
 
     {%- if section.settings.show_burger -%}
@@ -202,11 +208,12 @@
     height: var(--knr-header-icon-size);
   }
 
-  .knr-header__action--cart > a {
+  .knr-header__cart-button {
     display: inline-flex;
     width: 100%;
     height: 100%;
     color: inherit;
+    cursor: pointer;
   }
 
   .knr-header .cart-bubble {

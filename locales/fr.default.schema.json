@@ -9,6 +9,8 @@
  */
 {
   "names": {
+    "cart_drawer": "KNR — Cart drawer gamifié",
+    "cart_tier": "Palier d’avantage",
     "404": "404",
     "borders": "Bordures",
     "collapsible_row": "Rangée réductible",
@@ -200,6 +202,16 @@
     "layered_slideshow": "Diaporama superposé"
   },
   "settings": {
+    "samples_collection": "Collection d’échantillons",
+    "samples_title": "Titre du module échantillons",
+    "gift_product": "Produit offert",
+    "message_all_unlocked": "Message « tous avantages débloqués »",
+    "tier_threshold": "Seuil (montant)",
+    "reward_type": "Type d’avantage",
+    "samples_max": "Nombre d’échantillons max",
+    "tier_label": "Libellé du palier",
+    "message_locked": "Message avant déblocage",
+    "tier_benefit": "Avantage (mis en gras)",
     "autoplay": "Lecture automatique",
     "background": "Arrière-plan",
     "border_radius": "Rayon de la bordure",
@@ -612,6 +624,9 @@
     "actions_display_style": "Style de menu"
   },
   "options": {
+    "reward_shipping": "Livraison offerte",
+    "reward_samples": "Échantillons offerts",
+    "reward_gift": "Produit offert",
     "apple": "Pomme",
     "arrow": "Flèche",
     "banana": "Banane",
@@ -887,6 +902,9 @@
     "icons": "Icônes"
   },
   "content": {
+    "samples": "Échantillons gratuits",
+    "gift_product": "Produit offert",
+    "messages": "Messages",
     "background_video": "Vidéo de fond",
     "describe_the_video_for": "Décrivez la vidéo pour les clients utilisant des lecteurs d’écran. [En savoir plus](https://help.shopify.com/manual/online-store/themes/theme-structure/theme-features#video-block)",
     "width_is_automatically_optimized": "La largeur est automatiquement optimisée pour les appareils mobiles.",
@@ -1098,6 +1116,14 @@
     "new_arrivals": "Nouveautés"
   },
   "info": {
+    "cart_rewards_intro": "Configurez les paliers d’avantages, la liste d’échantillons et le produit offert. Ordonnez les paliers du plus petit au plus grand montant. Ces paliers pilotent l’affichage ; la gratuité réelle est gérée par les remises automatiques Shopify correspondantes.",
+    "samples_collection": "Collection dont les produits sont proposés comme échantillons.",
+    "gift_product": "Produit ajouté automatiquement au panier une fois le palier « Produit offert » atteint.",
+    "tier_threshold": "Montant du panier (devise de la boutique) à partir duquel l’avantage est débloqué.",
+    "samples_max": "Nombre maximum d’échantillons sélectionnables à ce palier.",
+    "tier_label": "Libellé court affiché sous le marqueur du palier.",
+    "message_locked": "Message tant que le palier n’est pas atteint. Utilisez {montant} pour le montant restant et {avantage} pour l’avantage en gras.",
+    "tier_benefit": "Texte de l’avantage inséré en gras à la place de {avantage} (ex. « la livraison offerte »).",
     "carousel_layout_on_mobile": "Le carrousel est toujours utilisé sur mobile",
     "video_alt_text": "Décrivez la vidéo pour les utilisateurs de technologies d’assistance",
     "video_autoplay": "Les vidéos seront mises en sourdine par défaut",

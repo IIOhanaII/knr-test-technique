@@ -1,0 +1,7 @@
+# Single-language theme (FR default). The gamified cart drawer adds merchant- and
+# customer-facing keys to fr.default(.schema).json only; Horizon ships ~50 other
+# locale files we don't translate, so MatchingTranslations is noise here.
+extends: theme-check:recommended
+
+MatchingTranslations:
+  enabled: false

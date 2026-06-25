@@ -29,6 +29,8 @@
     "slider_label": "Carrousel"
   },
   "accessibility": {
+    "cart_progress": "Progression des avantages du panier",
+    "back": "Retour",
     "play_model": "Jouer le modèle 3D",
     "play_video": "Lire la vidéo",
     "unit_price": "Prix unitaire",
@@ -129,6 +131,24 @@
     "zoom_media": "Zoom du support multimédia {{ index }}"
   },
   "content": {
+    "cart_rewards": {
+      "all_unlocked": "Bravo, vous bénéficiez de tous vos cadeaux !",
+      "samples_count": "{{ count }} / {{ max }} sélectionné(s)",
+      "samples_available": "{{ count }} échantillons offerts.",
+      "samples_heading": "Échantillons",
+      "choose": "Choisir",
+      "modify": "Modifier",
+      "validate": "Valider votre choix",
+      "add_sample": "Ajouter",
+      "remove_sample": "Retirer",
+      "free_badge": "Offert",
+      "gift_unlocked": "Votre cadeau",
+      "drawer_title": "Votre panier",
+      "view_cart": "Voir mon panier",
+      "legal_note": "Les frais de livraison et codes promo s'appliquent lors du paiement.",
+      "reviews_count": "{{ count }} avis",
+      "remove": "Supprimer"
+    },
     "reviews": "avis",
     "language": "Langue",
     "localization_region_and_language": "Région et langue",
